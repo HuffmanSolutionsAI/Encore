@@ -9,13 +9,18 @@ See `docs/BUILD_SPEC.md` for the full product and technical spec.
 ## Engineering conventions
 
 - **Platform:** iOS 17+, Swift 5.9+, SwiftUI, MVVM. Swift Package Manager only.
-- **Backend:** Supabase (Postgres + Auth + Edge Functions in TypeScript/Deno).
+- **Backend:** AWS — RDS PostgreSQL, an API Lambda (TypeScript/Node) behind API Gateway, Cognito
+  auth (Sign in with Apple). Infrastructure as Terraform. *This deviates from the build spec, which
+  defaults to Supabase — the change was approved by Jake. See README.md.*
+- **Authorization:** the iOS app calls API Gateway only; the API Lambda verifies the Cognito JWT
+  and enforces per-user ownership. No Postgres Row-Level Security on this stack.
 - **State:** `@Observable` view models; one per screen. Keep views thin.
 - **Networking:** async/await; a single typed API client; no networking in views.
-- **Secrets:** never commit keys; all third-party keys live in Edge Function env vars, never in the
-  app binary. Use a `.env.example` and keep real values out of git.
-- **Dependencies:** minimal. Do not add a package without flagging it first. Supabase Swift SDK is
-  fine; avoid large UI frameworks — build components in `DesignSystem/`.
+- **Secrets:** never commit keys; database credentials and third-party keys live in AWS Secrets
+  Manager, never in the app binary. Use a `.env.example` and keep real values out of git.
+- **Dependencies:** minimal. Do not add a package without flagging it first. The AWS SDK for Swift
+  / Amplify (for Cognito auth) is fine; avoid large UI frameworks — build components in
+  `DesignSystem/`.
 - **Design:** use only the tokens in Section 8 of the build spec. No off-brand colors. Fraunces for
   display, Inter for UI. Support light + dark mode.
 - **Testing:** unit tests for the scoring algorithm (Section 6) and all services; the scoring math
@@ -36,8 +41,9 @@ Encore/               # iOS app sources
   Features/           # One folder per screen (MVVM)
   DesignSystem/       # Color, Typography, StarRating, EncoreButton, Card, DoubleRule
   Resources/          # Fonts + Assets.xcassets
-supabase/             # Postgres migrations, Edge Functions, config
-docs/BUILD_SPEC.md    # Source of truth
+api/                  # Backend API — TypeScript Lambda + SQL migrations
+infra/                # AWS infrastructure as Terraform
+docs/BUILD_SPEC.md    # Source of truth (original brief)
 ```
 
 ## Milestones

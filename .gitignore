@@ -24,10 +24,18 @@ Package.resolved
 *.env
 !.env.example
 
-# Supabase
-supabase/.branches/
-supabase/.temp/
-supabase/.env
+# Node / API build
+node_modules/
+api/dist/
+
+# Terraform (the .terraform.lock.hcl lock file SHOULD be committed)
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+*.auto.tfvars
+infra/build/
+crash.log
 
 # Fonts (licensed OFL files dropped in locally — see Resources/Fonts/README.md)
 Encore/Resources/Fonts/*.ttf

@@ -1,7 +1,7 @@
 import Foundation
 
-/// App profile row (`users`). Credentials live in Supabase `auth.users`;
-/// `id` matches the auth uid.
+/// App profile row (`users`). Credentials are managed by Amazon Cognito;
+/// `id` holds the Cognito `sub`.
 struct UserProfile: Identifiable, Codable, Hashable {
     let id: UUID
     var handle: String

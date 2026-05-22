@@ -1,0 +1,17 @@
+# Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
+
+aws_region  = "us-east-1"
+environment = "dev"
+
+# RDS sizing — bump db_instance_class and set db_multi_az = true for production.
+db_instance_class = "db.t4g.micro"
+db_multi_az       = false
+
+# Sign in with Apple. Leave blank to deploy without the Apple provider wired;
+# fill in once the Apple Services ID and signing key exist.
+apple_signin = {
+  client_id   = ""
+  team_id     = ""
+  key_id      = ""
+  private_key = ""
+}
