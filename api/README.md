@@ -7,9 +7,21 @@ build spec Sections 3–6 for the architecture.
 ## Layout
 
 ```
-src/handler.ts     Lambda entry point and routing
+src/handler.ts     Lambda entry point and route table
+src/routes/        Route handlers grouped by resource
+src/lib/           Shared helpers — db pool, secrets, auth, HTTP, Last.fm
 migrations/        Versioned SQL migrations — the source of truth for the schema
 ```
+
+## Routes
+
+| Route | Auth | Purpose |
+|-------|------|---------|
+| `GET /health` | public | Liveness check |
+| `GET /users/me` | JWT | Fetch the caller's profile (404 before onboarding) |
+| `POST /users` | JWT | Create the caller's profile — `handle`, `display_name` |
+| `PATCH /users/me` | JWT | Update mutable fields, e.g. `lastfm_username` |
+| `GET /lastfm/verify?username=` | JWT | Confirm a Last.fm username exists |
 
 ## Build
 
@@ -41,9 +53,10 @@ through a bastion host or an SSM port-forwarding session inside the VPC.
 
 Still to come:
 
+- **M2** — `/now-playing` (Last.fm proxy) and the now-playing screen.
 - **M4** — the scoring functions and recompute triggers (build spec Section 6).
-- **M2+** — endpoints: `/now-playing` (Last.fm proxy), the catalog proxy, the
-  Last.fm sync job (EventBridge-scheduled), and feature routes.
+- Later milestones — the catalog proxy, the Last.fm sync job
+  (EventBridge-scheduled), and the remaining feature routes.
 
 ## Authorization
 
