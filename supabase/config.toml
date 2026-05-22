@@ -1,0 +1,38 @@
+# Supabase local configuration — https://supabase.com/docs/guides/cli/config
+project_id = "encore"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+
+[auth]
+enabled = true
+site_url = "encore://auth-callback"
+additional_redirect_urls = ["encore://auth-callback"]
+jwt_expiry = 3600
+enable_signup = true
+
+# Sign in with Apple is the primary auth method (build spec F1).
+# Configure the provider's client id / secret as Edge Function secrets,
+# not in this file.
+[auth.external.apple]
+enabled = true
+
+[edge_runtime]
+enabled = true
