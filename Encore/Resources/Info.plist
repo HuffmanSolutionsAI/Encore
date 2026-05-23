@@ -22,6 +22,18 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>EncoreAPIBaseURL</key>
+	<string>$(ENCORE_API_BASE_URL)</string>
+	<key>EncoreCognitoDomain</key>
+	<string>$(ENCORE_COGNITO_DOMAIN)</string>
+	<key>EncoreCognitoClientID</key>
+	<string>$(ENCORE_COGNITO_CLIENT_ID)</string>
+	<key>EncoreCognitoRedirectURI</key>
+	<string>$(ENCORE_COGNITO_REDIRECT_URI)</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>spotify</string>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>
