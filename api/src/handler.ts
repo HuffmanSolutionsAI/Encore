@@ -5,6 +5,7 @@ import type {
 import { HttpError, json } from "./lib/http";
 import { createUser, getMe, updateMe } from "./routes/users";
 import { verifyLastfm } from "./routes/lastfm";
+import { nowPlaying } from "./routes/nowPlaying";
 
 type Route = (
   event: APIGatewayProxyEventV2WithJWTAuthorizer,
@@ -18,6 +19,7 @@ const routes: Record<string, Route> = {
   "POST /users": createUser,
   "PATCH /users/me": updateMe,
   "GET /lastfm/verify": verifyLastfm,
+  "GET /now-playing": nowPlaying,
 };
 
 export async function handler(
