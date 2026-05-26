@@ -8,10 +8,35 @@ db_instance_class = "db.t4g.micro"
 db_multi_az       = false
 
 # Sign in with Apple. Leave blank to deploy without the Apple provider wired;
-# fill in once the Apple Services ID and signing key exist.
+# Cognito's hosted UI will fall back to email/password until these are set.
 apple_signin = {
   client_id   = ""
   team_id     = ""
   key_id      = ""
   private_key = ""
 }
+
+# --- Web client (AWS Amplify Hosting) ----------------------------------
+#
+# Leave amplify_github_token blank to skip the entire web-deploy stack
+# (Lambda + API + Cognito still apply — handy for backend-only work).
+
+amplify_github_repo = "https://github.com/HuffmanSolutionsAI/Encore"
+
+# GitHub fine-grained PAT scoped to this single repo. See infra/DEPLOY.md
+# for the exact permissions to grant.
+amplify_github_token = ""
+
+# Branch Amplify tracks for production deploys.
+amplify_branch = "main"
+
+# Fill in AFTER the first `terraform apply` — look at the `amplify_branch_url`
+# Terraform output, paste it here, then `terraform apply` again. See
+# infra/DEPLOY.md for the full two-apply walkthrough.
+amplify_branch_url = ""
+
+# Additional origins to register with Cognito (e.g. local dev). The Amplify
+# URL above is registered automatically once it's set.
+web_base_urls = [
+  "http://localhost:3000",
+]

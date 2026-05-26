@@ -71,10 +71,12 @@ resource "aws_cognito_user_pool_client" "ios" {
   callback_urls = concat(
     ["encore://auth-callback"],
     [for url in var.web_base_urls : "${url}/auth/callback"],
+    var.amplify_branch_url == "" ? [] : ["${var.amplify_branch_url}/auth/callback"],
   )
   logout_urls = concat(
     ["encore://auth-callback"],
     [for url in var.web_base_urls : "${url}/auth/signed-out"],
+    var.amplify_branch_url == "" ? [] : ["${var.amplify_branch_url}/auth/signed-out"],
   )
 
   allowed_oauth_flows                  = ["code"]

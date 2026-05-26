@@ -54,6 +54,31 @@ variable "web_base_urls" {
   ]
 }
 
+variable "amplify_github_repo" {
+  description = "GitHub repository URL Amplify Hosting clones (e.g., https://github.com/HuffmanSolutionsAI/Encore). Leave blank to skip the Amplify stack entirely."
+  type        = string
+  default     = ""
+}
+
+variable "amplify_github_token" {
+  description = "GitHub personal access token granting Amplify read access to the repo + permission to manage webhooks. Leave blank to skip the Amplify stack entirely."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "amplify_branch" {
+  description = "Branch Amplify Hosting tracks for production deploys."
+  type        = string
+  default     = "main"
+}
+
+variable "amplify_branch_url" {
+  description = "Public URL of the Amplify branch deploy (e.g., https://main.d1234567890.amplifyapp.com). Empty on first apply — fill in after Amplify creates the app, then re-apply so the web client's redirect URI and Cognito's callback list pick it up."
+  type        = string
+  default     = ""
+}
+
 variable "apple_signin" {
   description = "Sign in with Apple credentials for the Cognito identity provider. Leave blank to skip wiring the provider."
   type = object({

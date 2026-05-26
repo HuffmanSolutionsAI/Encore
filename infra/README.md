@@ -12,7 +12,12 @@ project instead runs on AWS at Jake's direction — see the root `README.md`.
 | Auth | Cognito user pool + app client, Sign in with Apple identity provider |
 | Compute | API Lambda (Node 20) in the VPC |
 | API | API Gateway HTTP API with a Cognito JWT authorizer |
+| Web hosting | AWS Amplify Hosting (Next.js 15 SSR) — set `amplify_github_token` to enable |
 | Secrets | Secrets Manager — database credentials and third-party API keys |
+
+For an end-to-end deploy walkthrough (including the GitHub token, the
+two-apply Cognito-callback dance, and the first Amplify build), see
+[`DEPLOY.md`](DEPLOY.md).
 
 ## Files
 
@@ -24,18 +29,21 @@ rds.tf         PostgreSQL instance + its Secrets Manager secret
 cognito.tf     User pool, app client, Apple identity provider
 lambda.tf      API Lambda, IAM role, log group
 apigw.tf       HTTP API, routes, JWT authorizer, stage
+amplify.tf     Amplify Hosting app + branch + service role (opt-in)
 secrets.tf     Third-party API key secret
-outputs.tf     API URL, Cognito ids, database endpoint
+outputs.tf     API URL, Cognito ids, database endpoint, Amplify URL
 ```
 
-## Deploy
+## Deploy (TL;DR — see DEPLOY.md for the full walkthrough)
 
 ```sh
 cd ../api && npm install && npm run build    # build the Lambda bundle first
 cd ../infra
 cp terraform.tfvars.example terraform.tfvars # then fill in values
 terraform init
-terraform apply
+terraform apply                              # first pass: creates everything
+# read `amplify_branch_url` from the output, paste into terraform.tfvars
+terraform apply                              # second pass: propagates URL
 ```
 
 `terraform apply` fails if `../api/dist` does not exist — build the API first.

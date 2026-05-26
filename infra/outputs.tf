@@ -27,3 +27,24 @@ output "db_secret_arn" {
   description = "Secrets Manager ARN holding the database connection details."
   value       = aws_secretsmanager_secret.db.arn
 }
+
+output "amplify_app_id" {
+  description = "Amplify Hosting app id."
+  value       = try(aws_amplify_app.web[0].id, null)
+}
+
+output "amplify_default_domain" {
+  description = "Amplify-generated <app-id>.amplifyapp.com domain."
+  value       = try(aws_amplify_app.web[0].default_domain, null)
+}
+
+output "amplify_branch_url" {
+  description = "Full URL of the tracked branch deploy. Set this as `amplify_branch_url` in terraform.tfvars and re-apply so the redirect URI propagates."
+  value       = try("https://${var.amplify_branch}.${aws_amplify_app.web[0].default_domain}", null)
+}
+
+output "amplify_webhook_url" {
+  description = "Push trigger URL — POST any payload to manually kick a build."
+  value       = try(aws_amplify_webhook.main[0].url, null)
+  sensitive   = true
+}
