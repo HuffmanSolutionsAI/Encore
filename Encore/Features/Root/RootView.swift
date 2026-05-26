@@ -15,7 +15,7 @@ struct RootView: View {
             case .signedOut, .onboarding:
                 OnboardingView()
             case .ready:
-                HomeView()
+                NowPlayingView()
             }
         }
         .animation(.easeInOut(duration: 0.18), value: statusKey(session.status))

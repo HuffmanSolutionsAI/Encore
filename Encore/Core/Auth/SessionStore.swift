@@ -31,6 +31,7 @@ final class SessionStore {
     /// Convenience accessors built atop `api`.
     var users: UsersAPI { UsersAPI(client: api) }
     var lastfm: LastfmAPI { LastfmAPI(client: api) }
+    var nowPlaying: NowPlayingAPI { NowPlayingAPI(client: api) }
 
     private let auth: CognitoAuthService
     private let keychain: KeychainStore
