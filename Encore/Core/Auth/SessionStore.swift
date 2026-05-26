@@ -32,6 +32,8 @@ final class SessionStore {
     var users: UsersAPI { UsersAPI(client: api) }
     var lastfm: LastfmAPI { LastfmAPI(client: api) }
     var nowPlaying: NowPlayingAPI { NowPlayingAPI(client: api) }
+    var ratings: RatingsAPI { RatingsAPI(client: api) }
+    var albums: AlbumsAPI { AlbumsAPI(client: api) }
 
     private let auth: CognitoAuthService
     private let keychain: KeychainStore

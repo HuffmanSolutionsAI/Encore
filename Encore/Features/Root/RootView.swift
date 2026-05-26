@@ -15,7 +15,7 @@ struct RootView: View {
             case .signedOut, .onboarding:
                 OnboardingView()
             case .ready:
-                NowPlayingView()
+                MainTabs()
             }
         }
         .animation(.easeInOut(duration: 0.18), value: statusKey(session.status))
@@ -39,6 +39,19 @@ struct RootView: View {
         case .onboarding(.spotifyExplainer): return "onboarding.spotify"
         case .ready: return "ready"
         }
+    }
+}
+
+/// The signed-in shell. Now Playing + Library tabs. M6 will add Friends.
+private struct MainTabs: View {
+    var body: some View {
+        TabView {
+            NowPlayingView()
+                .tabItem { Label("Now Playing", systemImage: "dot.radiowaves.left.and.right") }
+            LibraryView()
+                .tabItem { Label("Library", systemImage: "books.vertical") }
+        }
+        .tint(Color.encoreAccent)
     }
 }
 

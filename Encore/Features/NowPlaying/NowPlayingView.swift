@@ -34,7 +34,7 @@ struct NowPlayingView: View {
         }
         .onDisappear { model?.stop() }
         .sheet(item: $ratingTrack) { track in
-            RatingSheetPlaceholder(track: track)
+            RatingSheet(subject: .nowPlayingTrack(track))
         }
     }
 
