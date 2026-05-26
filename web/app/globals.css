@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Semantic brand tokens that resolve per light/dark mode. Build spec
+   Section 8.1: the base colors are the only acceptable values. */
+:root {
+  --encore-background: #F4EDDF; /* paper */
+  --encore-surface:    #FBF7EC; /* surface */
+  --encore-text:       #211B14; /* ink */
+  --encore-text-soft:  rgb(33 27 20 / 0.75);
+  --encore-text-faint: rgb(33 27 20 / 0.55);
+  --encore-accent:     #3D2F22; /* cocoa */
+  --encore-accent-deep:#241A12; /* cocoa-deep */
+  --encore-hairline:   #DCCFB2; /* dust */
+  --encore-brass:      #B98C3F; /* brass */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --encore-background: #1B1712; /* night */
+    --encore-surface:    #2A231C; /* night-surface */
+    --encore-text:       #F4EDDF; /* paper */
+    --encore-text-soft:  rgb(244 237 223 / 0.75);
+    --encore-text-faint: rgb(244 237 223 / 0.55);
+    --encore-accent:     #8C6A47; /* clay (lifted cocoa) */
+    --encore-accent-deep:#3D2F22;
+    --encore-hairline:   #3D2F22;
+    --encore-brass:      #B98C3F;
+  }
+}
+
+html, body {
+  background: var(--encore-background);
+  color: var(--encore-text);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer utilities {
+  .text-encore        { color: var(--encore-text); }
+  .text-encore-soft   { color: var(--encore-text-soft); }
+  .text-encore-faint  { color: var(--encore-text-faint); }
+  .text-encore-accent { color: var(--encore-accent); }
+  .text-encore-brass  { color: var(--encore-brass); }
+
+  .bg-encore         { background-color: var(--encore-background); }
+  .bg-encore-surface { background-color: var(--encore-surface); }
+  .bg-encore-accent  { background-color: var(--encore-accent); }
+  .bg-encore-accent-deep { background-color: var(--encore-accent-deep); }
+  .bg-encore-brass   { background-color: var(--encore-brass); }
+
+  .border-encore-hairline { border-color: var(--encore-hairline); }
+
+  .font-display { font-family: var(--font-fraunces), Georgia, serif; }
+  .font-sans    { font-family: var(--font-inter), system-ui, sans-serif; }
+}

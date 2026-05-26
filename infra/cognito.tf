@@ -51,7 +51,9 @@ resource "aws_cognito_identity_provider" "apple" {
 }
 
 resource "aws_cognito_user_pool_client" "ios" {
-  name         = "${local.name}-ios"
+  # Name kept for backward-compatibility with existing terraform state; this
+  # client now serves both the parked iOS app and the live web app.
+  name         = "${local.name}-app"
   user_pool_id = aws_cognito_user_pool.main.id
 
   generate_secret = false
@@ -66,8 +68,14 @@ resource "aws_cognito_user_pool_client" "ios" {
     var.apple_signin.client_id == "" ? [] : ["SignInWithApple"],
   )
 
-  callback_urls = ["encore://auth-callback"]
-  logout_urls   = ["encore://auth-callback"]
+  callback_urls = concat(
+    ["encore://auth-callback"],
+    [for url in var.web_base_urls : "${url}/auth/callback"],
+  )
+  logout_urls = concat(
+    ["encore://auth-callback"],
+    [for url in var.web_base_urls : "${url}/auth/signed-out"],
+  )
 
   allowed_oauth_flows                  = ["code"]
   allowed_oauth_scopes                 = ["email", "openid", "profile"]

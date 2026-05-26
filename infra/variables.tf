@@ -46,6 +46,14 @@ variable "db_multi_az" {
   default     = false
 }
 
+variable "web_base_urls" {
+  description = "Hostnames where the web app runs. Used to register OAuth callback + logout URLs with Cognito. Include both the deployed Amplify host and any local dev origins."
+  type        = list(string)
+  default = [
+    "http://localhost:3000",
+  ]
+}
+
 variable "apple_signin" {
   description = "Sign in with Apple credentials for the Cognito identity provider. Leave blank to skip wiring the provider."
   type = object({

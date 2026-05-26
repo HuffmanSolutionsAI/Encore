@@ -9,7 +9,7 @@ output "cognito_user_pool_id" {
 }
 
 output "cognito_client_id" {
-  description = "Cognito app client id for the iOS app."
+  description = "Cognito app client id used by both the web app and the parked iOS app."
   value       = aws_cognito_user_pool_client.ios.id
 }
 
