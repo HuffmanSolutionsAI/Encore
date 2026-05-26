@@ -3,6 +3,13 @@
 **A music-rating app. Build brief for Claude Code.**
 Version 1.0 · May 22, 2026 · Prepared for Jake, Huffman AI Solutions
 
+> **Platform-pivot note (May 26 2026).** This spec was authored against a native iOS target.
+> The MVP target has since moved to a **web app** (Next.js 15) because shipping iOS is blocked
+> on tools the founder doesn't have right now (Xcode, an Apple Developer account). The product
+> definition, data model, scoring algorithm, third-party integrations, and brand all carry over
+> verbatim — only the client platform changed. Where this document references iOS, SwiftUI,
+> Xcode, or Swift, read "web equivalent" instead. See `README.md` for context.
+
 ---
 
 ## 0. How to use this document
