@@ -1,26 +1,28 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { APP_NAME, BRAND_LINE, RATING_PROMPT } from "@/lib/config";
+import { APP_NAME, BRAND_LINE } from "@/lib/config";
 import { useSession } from "@/lib/auth/session";
 import { Card } from "@/components/design-system/Card";
 import { DoubleRule } from "@/components/design-system/DoubleRule";
-import { EncoreButton } from "@/components/design-system/EncoreButton";
-import { StarRating } from "@/components/design-system/StarRating";
 import { HandleForm } from "@/components/onboarding/HandleForm";
 import { LastfmForm } from "@/components/onboarding/LastfmForm";
 import { SpotifyExplainer } from "@/components/onboarding/SpotifyExplainer";
+import { NowPlayingCard } from "@/components/now-playing/NowPlayingCard";
+import { RateModal, type RatingSubject } from "@/components/rating/RateModal";
+import type { NowPlayingTrack } from "@/lib/types";
 
 /**
- * The top-level router. Mirrors `RootView` on the iOS side: based on the
+ * Top-level router. Mirrors `RootView` on the iOS side: based on the
  * SessionProvider's status, render a launch splash, redirect to sign-in,
- * walk the onboarding stages, or show the (placeholder for now) home.
+ * walk the onboarding stages, or show the now-playing home.
  */
 export default function HomePage() {
   const { status, signOut } = useSession();
   const router = useRouter();
+  const [ratingSubject, setRatingSubject] = useState<RatingSubject | null>(null);
 
   useEffect(() => {
     if (status.kind === "signed_out") {
@@ -28,18 +30,46 @@ export default function HomePage() {
     }
   }, [status.kind, router]);
 
-  return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12">
-      <div className="w-full max-w-md flex flex-col items-center gap-8">
-        <header className="flex flex-col items-center gap-3">
-          <h1 className="font-display text-5xl text-encore-accent">{APP_NAME}</h1>
-          <DoubleRule width={92} />
-          <p className="text-encore-soft text-base">{BRAND_LINE}</p>
-        </header>
+  function handleRate(track: NowPlayingTrack) {
+    setRatingSubject({ kind: "now_playing", track });
+  }
 
-        {renderBody()}
-      </div>
-    </main>
+  return (
+    <>
+      <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12">
+        <div className="w-full max-w-md flex flex-col items-center gap-8">
+          <header className="flex flex-col items-center gap-3">
+            <h1 className="font-display text-5xl text-encore-accent">{APP_NAME}</h1>
+            <DoubleRule width={92} />
+            <p className="text-encore-soft text-base">{BRAND_LINE}</p>
+          </header>
+
+          {renderBody()}
+
+          {status.kind === "ready" && (
+            <div className="flex items-center gap-4 text-xs">
+              <a href="/library" className="text-encore-accent underline">
+                Library
+              </a>
+              <span className="text-encore-faint">·</span>
+              <button
+                onClick={signOut}
+                className="text-encore-faint underline"
+              >
+                Sign out
+              </button>
+            </div>
+          )}
+        </div>
+      </main>
+
+      {ratingSubject && (
+        <RateModal
+          subject={ratingSubject}
+          onClose={() => setRatingSubject(null)}
+        />
+      )}
+    </>
   );
 
   function renderBody() {
@@ -54,7 +84,7 @@ export default function HomePage() {
       case "onboarding":
         return <OnboardingStage status={status} />;
       case "ready":
-        return <ReadyPlaceholder onSignOut={signOut} />;
+        return <NowPlayingCard onRate={handleRate} />;
     }
   }
 }
@@ -72,33 +102,4 @@ function OnboardingStage({
     case "spotify_explainer":
       return <SpotifyExplainer />;
   }
-}
-
-function ReadyPlaceholder({ onSignOut }: { onSignOut: () => void }) {
-  return (
-    <>
-      <Card padding="lg" className="w-full">
-        <div className="flex flex-col items-center gap-4 text-center">
-          <p className="font-display text-xl">Nothing playing yet.</p>
-          <p className="text-encore-soft">
-            Press play on Spotify and we'll catch the first note.
-          </p>
-          <StarRating score={4.5} size={28} />
-        </div>
-      </Card>
-
-      <EncoreButton kind="brass" disabled>
-        {RATING_PROMPT}
-      </EncoreButton>
-
-      <button
-        onClick={onSignOut}
-        className="text-encore-faint text-xs underline"
-      >
-        Sign out
-      </button>
-
-      <p className="text-encore-faint text-xs">Milestone 1 — onboarding (web)</p>
-    </>
-  );
 }

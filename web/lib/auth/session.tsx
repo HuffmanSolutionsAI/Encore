@@ -11,7 +11,10 @@ import {
 } from "react";
 
 import { APIClient } from "@/lib/api/client";
+import { AlbumsAPI } from "@/lib/api/albums";
 import { LastfmAPI } from "@/lib/api/lastfm";
+import { NowPlayingAPI } from "@/lib/api/nowPlaying";
+import { RatingsAPI } from "@/lib/api/ratings";
 import { UsersAPI } from "@/lib/api/users";
 import type { UserProfile } from "@/lib/types";
 import {
@@ -43,6 +46,9 @@ interface SessionContextValue {
   api: APIClient;
   users: UsersAPI;
   lastfm: LastfmAPI;
+  nowPlaying: NowPlayingAPI;
+  ratings: RatingsAPI;
+  albums: AlbumsAPI;
   signIn: () => Promise<void>;
   signOut: () => void;
   /** Called by onboarding screens once a profile is created / updated. */
@@ -96,6 +102,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const users = useMemo(() => new UsersAPI(api), [api]);
   const lastfm = useMemo(() => new LastfmAPI(api), [api]);
+  const nowPlaying = useMemo(() => new NowPlayingAPI(api), [api]);
+  const ratings = useMemo(() => new RatingsAPI(api), [api]);
+  const albums = useMemo(() => new AlbumsAPI(api), [api]);
 
   const advanceWithProfile = useCallback((profile: UserProfile) => {
     if (!profile.lastfm_username) {
@@ -198,6 +207,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       api,
       users,
       lastfm,
+      nowPlaying,
+      ratings,
+      albums,
       signIn,
       signOut,
       setProfile,
@@ -209,6 +221,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       api,
       users,
       lastfm,
+      nowPlaying,
+      ratings,
+      albums,
       signIn,
       signOut,
       setProfile,
