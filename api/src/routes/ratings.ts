@@ -183,7 +183,11 @@ export async function upsertRating(
 
   await recomputeForRating({ subjectType, subjectID });
 
-  return json(200, rows[0]);
+  const row = rows[0]!;
+  return json(200, {
+    ...row,
+    score: row.score === null ? null : Number(row.score),
+  });
 }
 
 interface RatingWithSubject extends RatingRow {
@@ -223,5 +227,11 @@ export async function listMyRatings(
      limit 200`,
     [userId],
   );
-  return json(200, { ratings: rows });
+  // pg returns numeric columns as strings — coerce to keep the JSON shape
+  // honest for the iOS decoder.
+  const ratings = rows.map((r) => ({
+    ...r,
+    score: r.score === null ? null : Number(r.score),
+  }));
+  return json(200, { ratings });
 }

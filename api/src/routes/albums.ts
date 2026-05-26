@@ -141,7 +141,12 @@ export async function getAlbum(
       score: personal.score,
       rated_tracks: personal.ratedTracks,
       total_tracks: personal.totalTracks,
-      album_rating: userAlbumRatingRes.rows[0] ?? null,
+      album_rating: userAlbumRatingRes.rows[0]
+        ? {
+            score: num(userAlbumRatingRes.rows[0].score),
+            review_text: userAlbumRatingRes.rows[0].review_text,
+          }
+        : null,
     },
   });
 }
