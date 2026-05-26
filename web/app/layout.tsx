@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Inter } from "next/font/google";
 import { APP_NAME, BRAND_LINE } from "@/lib/config";
+import { SessionProvider } from "@/lib/auth/session";
 import "./globals.css";
 
 // Build spec Section 8.2: Fraunces for display, Inter for UI. SemiBold is
@@ -40,7 +41,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${fraunces.variable} ${inter.variable}`}>
       <body className="bg-encore text-encore font-sans antialiased">
-        {children}
+        <SessionProvider>{children}</SessionProvider>
       </body>
     </html>
   );

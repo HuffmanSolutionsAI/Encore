@@ -1,15 +1,32 @@
-import { APP_NAME, BRAND_LINE, RATING_PROMPT, isRemoteConfigured } from "@/lib/config";
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+
+import { APP_NAME, BRAND_LINE, RATING_PROMPT } from "@/lib/config";
+import { useSession } from "@/lib/auth/session";
 import { Card } from "@/components/design-system/Card";
 import { DoubleRule } from "@/components/design-system/DoubleRule";
-import { StarRating } from "@/components/design-system/StarRating";
 import { EncoreButton } from "@/components/design-system/EncoreButton";
+import { StarRating } from "@/components/design-system/StarRating";
+import { HandleForm } from "@/components/onboarding/HandleForm";
+import { LastfmForm } from "@/components/onboarding/LastfmForm";
+import { SpotifyExplainer } from "@/components/onboarding/SpotifyExplainer";
 
 /**
- * Branded placeholder home (web M0). The real onboarding + now-playing
- * routes replace this in M1/M2.
+ * The top-level router. Mirrors `RootView` on the iOS side: based on the
+ * SessionProvider's status, render a launch splash, redirect to sign-in,
+ * walk the onboarding stages, or show the (placeholder for now) home.
  */
-export default function Home() {
-  const configured = isRemoteConfigured();
+export default function HomePage() {
+  const { status, signOut } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status.kind === "signed_out") {
+      router.replace("/auth/signin");
+    }
+  }, [status.kind, router]);
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12">
@@ -20,52 +37,68 @@ export default function Home() {
           <p className="text-encore-soft text-base">{BRAND_LINE}</p>
         </header>
 
-        <Card padding="lg" className="w-full">
-          <div className="flex flex-col items-center gap-4 text-center">
-            <p className="font-display text-xl">Nothing in here yet.</p>
-            <p className="text-encore-soft">
-              Rate the last song that stopped you in your tracks.
-            </p>
-            <div className="pt-1">
-              <StarRating score={4.5} size={30} />
-            </div>
-          </div>
-        </Card>
-
-        <div className="w-full">
-          <EncoreButton kind="brass" icon={<StarIcon />}>
-            {RATING_PROMPT}
-          </EncoreButton>
-        </div>
-
-        <p className="text-encore-faint text-xs">Milestone 0 — foundations (web)</p>
-
-        {!configured && (
-          <Card padding="md" className="w-full">
-            <div className="text-encore-soft text-sm space-y-2">
-              <p className="font-semibold text-encore">Not configured yet.</p>
-              <p>
-                Copy <code className="font-mono">.env.local.example</code> to{" "}
-                <code className="font-mono">.env.local</code> and fill the values from
-                <code className="font-mono"> terraform output</code> in
-                <code className="font-mono"> infra/</code>. Sign-in, now-playing, and
-                ratings all need it.
-              </p>
-            </div>
-          </Card>
-        )}
+        {renderBody()}
       </div>
     </main>
   );
+
+  function renderBody() {
+    switch (status.kind) {
+      case "launching":
+      case "signed_out":
+        return (
+          <Card padding="lg" className="w-full text-center">
+            <p className="text-encore-soft">One moment…</p>
+          </Card>
+        );
+      case "onboarding":
+        return <OnboardingStage status={status} />;
+      case "ready":
+        return <ReadyPlaceholder onSignOut={signOut} />;
+    }
+  }
 }
 
-function StarIcon() {
+function OnboardingStage({
+  status,
+}: {
+  status: Extract<ReturnType<typeof useSession>["status"], { kind: "onboarding" }>;
+}) {
+  switch (status.stage) {
+    case "choose_handle":
+      return <HandleForm />;
+    case "link_lastfm":
+      return <LastfmForm />;
+    case "spotify_explainer":
+      return <SpotifyExplainer />;
+  }
+}
+
+function ReadyPlaceholder({ onSignOut }: { onSignOut: () => void }) {
   return (
-    <svg viewBox="0 0 24 24" width={18} height={18} aria-hidden>
-      <path
-        d="M12 2.5l2.928 6.193 6.822.92-4.987 4.65 1.232 6.737L12 17.77l-5.995 3.23 1.232-6.737L2.25 9.613l6.822-.92L12 2.5z"
-        fill="currentColor"
-      />
-    </svg>
+    <>
+      <Card padding="lg" className="w-full">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <p className="font-display text-xl">Nothing playing yet.</p>
+          <p className="text-encore-soft">
+            Press play on Spotify and we'll catch the first note.
+          </p>
+          <StarRating score={4.5} size={28} />
+        </div>
+      </Card>
+
+      <EncoreButton kind="brass" disabled>
+        {RATING_PROMPT}
+      </EncoreButton>
+
+      <button
+        onClick={onSignOut}
+        className="text-encore-faint text-xs underline"
+      >
+        Sign out
+      </button>
+
+      <p className="text-encore-faint text-xs">Milestone 1 — onboarding (web)</p>
+    </>
   );
 }
