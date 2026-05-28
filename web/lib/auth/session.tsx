@@ -16,6 +16,7 @@ import { LastfmAPI } from "@/lib/api/lastfm";
 import { NowPlayingAPI } from "@/lib/api/nowPlaying";
 import { RatingsAPI } from "@/lib/api/ratings";
 import { UsersAPI } from "@/lib/api/users";
+import { ExportAPI, FeedAPI, FollowsAPI, ProfilesAPI } from "@/lib/api/social";
 import { remoteConfig } from "@/lib/config";
 import type { UserProfile } from "@/lib/types";
 import {
@@ -51,6 +52,10 @@ interface SessionContextValue {
   nowPlaying: NowPlayingAPI;
   ratings: RatingsAPI;
   albums: AlbumsAPI;
+  follows: FollowsAPI;
+  feed: FeedAPI;
+  profiles: ProfilesAPI;
+  exporter: ExportAPI;
   signIn: () => Promise<void>;
   signOut: () => void;
   /** Called by onboarding screens once a profile is created / updated. */
@@ -120,6 +125,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const nowPlaying = useMemo(() => new NowPlayingAPI(api), [api]);
   const ratings = useMemo(() => new RatingsAPI(api), [api]);
   const albums = useMemo(() => new AlbumsAPI(api), [api]);
+  const follows = useMemo(() => new FollowsAPI(api), [api]);
+  const feed = useMemo(() => new FeedAPI(api), [api]);
+  const profiles = useMemo(() => new ProfilesAPI(api), [api]);
+  const exporter = useMemo(() => new ExportAPI(api), [api]);
 
   const advanceWithProfile = useCallback((profile: UserProfile) => {
     if (!profile.lastfm_username) {
@@ -252,6 +261,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       nowPlaying,
       ratings,
       albums,
+      follows,
+      feed,
+      profiles,
+      exporter,
       signIn,
       signOut,
       setProfile,
@@ -267,6 +280,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       nowPlaying,
       ratings,
       albums,
+      follows,
+      feed,
+      profiles,
+      exporter,
       signIn,
       signOut,
       setProfile,

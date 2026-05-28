@@ -95,6 +95,32 @@ export class APIClient {
     throw this.errorFor(res.status, errorBody);
   }
 
+  /**
+   * Fetch a file (e.g. the ratings export) with auth attached. Returns the
+   * blob plus the server-suggested filename from Content-Disposition.
+   */
+  async getFile(path: string, query?: Record<string, string>): Promise<{ blob: Blob; filename: string }> {
+    if (!remoteConfig.apiBaseURL) throw new APIError("not_configured");
+    const auth = await this.authHeaders();
+    if (!auth) throw new APIError("unauthorized");
+
+    const url = new URL(joinPath(remoteConfig.apiBaseURL, path));
+    if (query) for (const [k, v] of Object.entries(query)) url.searchParams.set(k, v);
+
+    let res: Response;
+    try {
+      res = await fetch(url, { headers: { ...auth } });
+    } catch {
+      throw new APIError("transport");
+    }
+    if (!res.ok) throw this.errorFor(res.status, null);
+
+    const disposition = res.headers.get("content-disposition") ?? "";
+    const match = /filename="?([^"]+)"?/.exec(disposition);
+    const filename = match?.[1] ?? "export";
+    return { blob: await res.blob(), filename };
+  }
+
   private errorFor(status: number, body: ServerErrorBody | null): APIError {
     const serverCode = body?.error;
     const msg = body?.message;

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Fraunces, Inter } from "next/font/google";
 import { APP_NAME, BRAND_LINE } from "@/lib/config";
 import { SessionProvider } from "@/lib/auth/session";
+import { ThemeProvider, THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 // Build spec Section 8.2: Fraunces for display, Inter for UI. The editorial
@@ -41,8 +42,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${fraunces.variable} ${inter.variable}`}>
+      <head>
+        {/* Apply the saved theme before first paint to avoid a flash. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="bg-page text-fg font-sans antialiased">
-        <SessionProvider>{children}</SessionProvider>
+        <ThemeProvider>
+          <SessionProvider>{children}</SessionProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

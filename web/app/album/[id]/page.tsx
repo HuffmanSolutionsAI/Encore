@@ -15,6 +15,7 @@ import { DoubleRule } from "@/components/design-system/DoubleRule";
 import { Score } from "@/components/design-system/Score";
 import { StarRow } from "@/components/design-system/StarRow";
 import { AlbumArt } from "@/components/design-system/AlbumArt";
+import { Avatar } from "@/components/design-system/Avatar";
 import { Icon } from "@/components/design-system/Icon";
 import type { AlbumDetail, AlbumTrackRow } from "@/lib/types";
 
@@ -95,7 +96,10 @@ function AlbumContent({ id }: { id: string }) {
           <Hero detail={state.detail} onRate={() => rateAlbum(state.detail)} />
           <div className="mt-12 grid grid-cols-1 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] gap-10">
             <Tracklist detail={state.detail} onRateTrack={(t) => rateTrack(state.detail, t)} />
-            <Highlights detail={state.detail} />
+            <div className="flex flex-col gap-6">
+              <Friends detail={state.detail} />
+              <Highlights detail={state.detail} />
+            </div>
           </div>
         </>
       )}
@@ -222,6 +226,35 @@ function Tracklist({ detail, onRateTrack }: { detail: AlbumDetail; onRateTrack: 
             </span>
           </button>
         ))}
+      </Card>
+    </div>
+  );
+}
+
+// ─────────────────────────── friends who rated ───────────────────────────
+
+function Friends({ detail }: { detail: AlbumDetail }) {
+  if (detail.friends.length === 0) return null;
+  return (
+    <div>
+      <SectionHeader title="Friends" subtitle="Encores among people you follow." />
+      <Card padding={18} className="mt-5">
+        <ul className="flex flex-col gap-3">
+          {detail.friends.map((f) => (
+            <li key={f.handle} className="flex items-center gap-3">
+              <Link href={`/u/${f.handle}`}>
+                <Avatar name={f.display_name} size={36} />
+              </Link>
+              <div className="flex-1 min-w-0">
+                <Link href={`/u/${f.handle}`} className="text-fg text-sm font-semibold hover:underline truncate block">
+                  {f.display_name}
+                </Link>
+                <div className="t-caption">@{f.handle}</div>
+              </div>
+              <Score value={f.score} size={20} />
+            </li>
+          ))}
+        </ul>
       </Card>
     </div>
   );

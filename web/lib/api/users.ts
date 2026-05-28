@@ -26,9 +26,10 @@ export class UsersAPI {
     });
   }
 
-  /** `PATCH /users/me` — update mutable fields (e.g. the Last.fm username). */
-  async update(input: { lastfmUsername?: string | null }): Promise<UserProfile> {
+  /** `PATCH /users/me` — update mutable fields (display name, Last.fm username). */
+  async update(input: { displayName?: string; lastfmUsername?: string | null }): Promise<UserProfile> {
     const body: Record<string, unknown> = {};
+    if ("displayName" in input) body["display_name"] = input.displayName;
     if ("lastfmUsername" in input) body["lastfm_username"] = input.lastfmUsername;
     return this.client.request<UserProfile>("/users/me", { method: "PATCH", body });
   }

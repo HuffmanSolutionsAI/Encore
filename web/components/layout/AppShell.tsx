@@ -25,13 +25,13 @@ interface NavItem {
 const PRIMARY_NAV: NavItem[] = [
   { href: "/", label: "Home", icon: Icon.Home },
   { href: "/library", label: "Library", icon: Icon.Library },
-  { href: "/friends", label: "Friends", icon: Icon.Friends, soon: true },
+  { href: "/friends", label: "Friends", icon: Icon.Friends },
   { href: "/search", label: "Search", icon: Icon.Search, soon: true },
 ];
 
 const BOTTOM_NAV: NavItem[] = [
-  { href: "/profile", label: "You", icon: Icon.Profile, soon: true },
-  { href: "/settings", label: "Settings", icon: Icon.Settings, soon: true },
+  { href: "/profile", label: "You", icon: Icon.Profile },
+  { href: "/settings", label: "Settings", icon: Icon.Settings },
 ];
 
 /**
@@ -60,9 +60,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <NowPlayingProvider>
       <RateProvider>
-        <div className="flex min-h-screen w-full bg-page">
+        {/* Exactly one viewport tall, no page-level scroll — only #app-scroll
+            scrolls, so the sidebar and chrome stay fixed in place. */}
+        <div className="flex h-screen w-full overflow-hidden bg-page">
           <Sidebar />
-          <main className="flex-1 min-w-0 flex flex-col relative">
+          <main className="flex-1 min-w-0 min-h-0 flex flex-col relative">
             <TopBar />
             <div id="app-scroll" className="flex-1 overflow-y-auto min-h-0">
               <div className="mx-auto w-full max-w-5xl px-6 sm:px-10 py-8 sm:py-12">

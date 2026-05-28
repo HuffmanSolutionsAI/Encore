@@ -85,6 +85,12 @@ export interface AlbumHighlight {
   weighted: number;
 }
 
+export interface AlbumFriend {
+  handle: string;
+  display_name: string;
+  score: number | null;
+}
+
 export interface AlbumDetail {
   album: AlbumRow;
   tracks: AlbumTrackRow[];
@@ -95,6 +101,7 @@ export interface AlbumDetail {
   };
   highlights: AlbumHighlight[];
   skips: AlbumHighlight[];
+  friends: AlbumFriend[];
   personal: {
     score: number | null;
     rated_tracks: number;
@@ -104,6 +111,43 @@ export interface AlbumDetail {
       review_text: string | null;
     } | null;
   };
+}
+
+export interface PublicProfile {
+  id: string;
+  handle: string;
+  display_name: string;
+  avatar_url: string | null;
+  created_at: string;
+  is_following: boolean;
+  is_self: boolean;
+  stats: { records: number; ovations: number; followers: number; following: number };
+}
+
+export interface UserSearchResult {
+  id: string;
+  handle: string;
+  display_name: string;
+  avatar_url: string | null;
+  is_following: boolean;
+}
+
+export interface FeedItem {
+  id: string;
+  rater_id: string;
+  rater_handle: string;
+  rater_display_name: string;
+  subject_type: RatingSubjectType;
+  subject_id: string;
+  score: number | null;
+  review_text: string | null;
+  is_relisten: boolean;
+  updated_at: string;
+  track_title: string | null;
+  album_id_for_track: string | null;
+  album_title: string | null;
+  album_artist: string | null;
+  album_artwork_url: string | null;
 }
 
 export interface ServerErrorBody {
