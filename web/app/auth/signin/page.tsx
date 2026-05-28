@@ -25,17 +25,17 @@ export default function SignInPage() {
     <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12">
       <div className="w-full max-w-md flex flex-col items-center gap-8">
         <header className="flex flex-col items-center gap-3">
-          <h1 className="font-display text-5xl text-encore-accent">{APP_NAME}</h1>
+          <h1 className="font-display text-5xl text-brand">{APP_NAME}</h1>
           <DoubleRule width={92} />
-          <p className="text-encore-soft text-base">{BRAND_LINE}</p>
+          <p className="text-muted text-base">{BRAND_LINE}</p>
         </header>
 
-        <Card padding="lg" className="w-full">
+        <Card padding={28} className="w-full">
           <div className="flex flex-col gap-5 text-center">
             <h2 className="font-display text-2xl">Welcome.</h2>
             {devMode ? (
               <>
-                <p className="text-encore-soft">
+                <p className="text-muted">
                   Running in dev mode — sign in as a local user. Each click
                   mints a new account.
                 </p>
@@ -51,7 +51,7 @@ export default function SignInPage() {
               </>
             ) : (
               <>
-                <p className="text-encore-soft">
+                <p className="text-muted">
                   Sign in with Apple to start rating what you're listening to.
                 </p>
                 <div className="pt-1">
@@ -67,15 +67,15 @@ export default function SignInPage() {
               </>
             )}
             {errorMessage && (
-              <p className="text-sm text-encore-soft">{errorMessage}</p>
+              <p className="text-sm text-muted">{errorMessage}</p>
             )}
           </div>
         </Card>
 
         {!configured && (
-          <Card padding="md" className="w-full">
-            <div className="text-encore-soft text-sm space-y-2">
-              <p className="font-semibold text-encore">Not configured yet.</p>
+          <Card padding={16} className="w-full">
+            <div className="text-muted text-sm space-y-2">
+              <p className="font-semibold text-fg">Not configured yet.</p>
               {devMode ? (
                 <p>
                   Dev mode needs <code className="font-mono">NEXT_PUBLIC_API_BASE_URL</code>{" "}

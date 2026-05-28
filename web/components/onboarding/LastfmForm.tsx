@@ -47,19 +47,19 @@ export function LastfmForm() {
   }
 
   return (
-    <Card padding="lg" className="w-full">
+    <Card padding={28} className="w-full">
       <form className="flex flex-col gap-5" onSubmit={submit}>
         <header className="flex flex-col items-center gap-2 text-center">
           <h2 className="font-display text-2xl">Connect Last.fm.</h2>
           <DoubleRule width={48} />
-          <p className="text-encore-soft text-sm">
+          <p className="text-muted text-sm">
             Encore reads what you're playing through your Last.fm account.
             Just your username — no password needed.
           </p>
         </header>
 
         <label className="flex flex-col gap-1">
-          <span className="text-encore-faint text-xs uppercase tracking-wider">
+          <span className="text-quiet text-xs uppercase tracking-wider">
             Last.fm username
           </span>
           <input
@@ -71,24 +71,24 @@ export function LastfmForm() {
             autoCapitalize="none"
             autoCorrect="off"
             placeholder="your-lastfm-name"
-            className="bg-encore-surface text-encore px-3 py-2 rounded-card border border-encore-hairline focus:outline-none focus:border-encore-brass"
+            className="bg-surface text-fg px-3 py-2 rounded-card border border-hair focus:outline-none focus:border-brass"
             autoFocus
           />
         </label>
 
-        {error && <p className="text-encore-soft text-sm">{error}</p>}
+        {error && <p className="text-muted text-sm">{error}</p>}
 
         <EncoreButton type="submit" kind="primary" disabled={!canSubmit}>
           {submitting ? "Checking…" : "Continue"}
         </EncoreButton>
 
-        <p className="text-encore-faint text-xs text-center">
+        <p className="text-quiet text-xs text-center">
           No Last.fm account yet?{" "}
           <a
             href="https://www.last.fm/join"
             target="_blank"
             rel="noreferrer"
-            className="text-encore-accent underline"
+            className="text-brand underline"
           >
             Create one
           </a>

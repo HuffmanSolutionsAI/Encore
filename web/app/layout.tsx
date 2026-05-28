@@ -4,12 +4,13 @@ import { APP_NAME, BRAND_LINE } from "@/lib/config";
 import { SessionProvider } from "@/lib/auth/session";
 import "./globals.css";
 
-// Build spec Section 8.2: Fraunces for display, Inter for UI. SemiBold is
-// the wordmark/heading weight. We bring in display + 600 only for Fraunces
-// to keep the served font bytes down.
+// Build spec Section 8.2: Fraunces for display, Inter for UI. The editorial
+// design leans on Fraunces italic (subtitles, blurbs, pull quotes) and a
+// heavier 900 for a few display moments, so we load roman + italic.
 const fraunces = Fraunces({
   subsets: ["latin"],
-  weight: ["600"],
+  weight: ["400", "600", "900"],
+  style: ["normal", "italic"],
   variable: "--font-fraunces",
   display: "swap",
 });
@@ -40,7 +41,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${fraunces.variable} ${inter.variable}`}>
-      <body className="bg-encore text-encore font-sans antialiased">
+      <body className="bg-page text-fg font-sans antialiased">
         <SessionProvider>{children}</SessionProvider>
       </body>
     </html>

@@ -1,11 +1,23 @@
 /**
- * Two thin brass lines — the brand's section divider. Build spec Section 8.3.
+ * The double rule — two thin brass lines. Encore's signature editorial
+ * divider, sits under page titles and section headers. Build spec 8.3.
  */
-export function DoubleRule({ width = 80 }: { width?: number }) {
+export function DoubleRule({
+  width = 64,
+  ink = false,
+  className = "",
+  style,
+}: {
+  width?: number | string;
+  ink?: boolean;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
   return (
-    <div className="flex flex-col gap-1" style={{ width }} aria-hidden>
-      <div className="h-px bg-encore-brass" />
-      <div className="h-px bg-encore-brass" />
-    </div>
+    <div
+      aria-hidden
+      className={`drule ${ink ? "drule-ink" : ""} ${className}`}
+      style={{ width, ...style }}
+    />
   );
 }

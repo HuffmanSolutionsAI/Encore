@@ -2,24 +2,30 @@ import type { HTMLAttributes, ReactNode } from "react";
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
-  padding?: "sm" | "md" | "lg" | "none";
+  /** Inner padding in px. Use 0 for full-bleed lists. */
+  padding?: number;
+  /** Use the slightly-lifted raised surface (hero now-playing card). */
+  raised?: boolean;
 }
 
-const padMap = {
-  none: "p-0",
-  sm: "p-3",
-  md: "p-4",
-  lg: "p-6",
-} as const;
-
 /**
- * Raised surface — Surface fill, 1px Dust border, 13pt corner radius.
- * Build spec Section 8.3.
+ * Raised surface — surface fill, 1px hairline border, 14px radius, a low
+ * warm shadow. Cards lift, they don't float. Build spec 8.3.
  */
-export function Card({ children, padding = "md", className = "", ...rest }: CardProps) {
+export function Card({
+  children,
+  padding = 24,
+  raised = false,
+  className = "",
+  style,
+  ...rest
+}: CardProps) {
   return (
     <div
-      className={`bg-encore-surface border border-encore-hairline rounded-card ${padMap[padding]} ${className}`}
+      className={`border border-hair rounded-card shadow-card ${
+        raised ? "bg-raised" : "bg-surface"
+      } ${className}`}
+      style={{ padding, ...style }}
       {...rest}
     >
       {children}

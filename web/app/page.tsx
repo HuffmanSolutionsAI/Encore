@@ -1,97 +1,62 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter } from "next/navigation";
 
-import { BRAND_LINE } from "@/lib/config";
 import { useSession } from "@/lib/auth/session";
+import { useLibrary } from "@/lib/hooks/useLibrary";
 import { AppShell } from "@/components/layout/AppShell";
+import { HomeHero } from "@/components/home/HomeHero";
+import { RecentlyRated } from "@/components/now-playing/RecentlyRated";
+import { Wordmark } from "@/components/design-system/Wordmark";
 import { DoubleRule } from "@/components/design-system/DoubleRule";
 import { HandleForm } from "@/components/onboarding/HandleForm";
 import { LastfmForm } from "@/components/onboarding/LastfmForm";
 import { SpotifyExplainer } from "@/components/onboarding/SpotifyExplainer";
-import { NowPlayingCard } from "@/components/now-playing/NowPlayingCard";
-import { RecentlyRated } from "@/components/now-playing/RecentlyRated";
-import { RateModal, type RatingSubject } from "@/components/rating/RateModal";
-import type { NowPlayingTrack } from "@/lib/types";
 
 export default function HomePage() {
   const { status } = useSession();
-  const [ratingSubject, setRatingSubject] = useState<RatingSubject | null>(null);
-  const [recentReloadKey, setRecentReloadKey] = useState(0);
 
-  function handleRate(track: NowPlayingTrack) {
-    setRatingSubject({ kind: "now_playing", track });
-  }
+  return (
+    <AppShell>
+      {status.kind === "ready" ? (
+        <HomeContent />
+      ) : status.kind === "onboarding" ? (
+        <OnboardingFrame stage={status.stage} />
+      ) : (
+        <div className="pt-16 text-center t-small">One moment…</div>
+      )}
+    </AppShell>
+  );
+}
 
-  function handleSaved() {
-    // Bump the key so RecentlyRated re-fetches.
-    setRecentReloadKey((k) => k + 1);
-  }
+function HomeContent() {
+  const { ratings } = useSession();
+  const router = useRouter();
+  const { state } = useLibrary(ratings);
+
+  const entries = state.kind === "loaded" ? state.entries : [];
+  const recordCount = entries.length;
+  const ovationCount = entries.filter((e) => e.score === 5).length;
 
   return (
     <>
-      <AppShell maxWidth="narrow">
-        {renderBody()}
-      </AppShell>
-
-      {ratingSubject && (
-        <RateModal
-          subject={ratingSubject}
-          onClose={() => setRatingSubject(null)}
-          onSaved={handleSaved}
-        />
-      )}
+      <HomeHero recordCount={recordCount} ovationCount={ovationCount} />
+      <RecentlyRated entries={entries} onOpenLibrary={() => router.push("/library")} />
     </>
   );
-
-  function renderBody() {
-    switch (status.kind) {
-      case "launching":
-      case "signed_out":
-        return <Placeholder />;
-      case "onboarding":
-        return <OnboardingStage status={status} />;
-      case "ready":
-        return (
-          <div className="flex flex-col gap-8">
-            <NowPlayingCard onRate={handleRate} />
-            <RecentlyRated key={recentReloadKey} />
-          </div>
-        );
-    }
-  }
 }
 
-function Placeholder() {
+function OnboardingFrame({ stage }: { stage: "choose_handle" | "link_lastfm" | "spotify_explainer" }) {
   return (
-    <div className="flex flex-col items-center gap-3 pt-16">
-      <p className="text-encore-soft">One moment…</p>
-    </div>
-  );
-}
-
-function OnboardingStage({
-  status,
-}: {
-  status: Extract<ReturnType<typeof useSession>["status"], { kind: "onboarding" }>;
-}) {
-  return (
-    <div className="flex flex-col gap-6 items-center">
-      <header className="flex flex-col items-center gap-2 text-center pt-4">
-        <p className="text-encore-soft text-sm">{BRAND_LINE}</p>
-        <DoubleRule width={60} />
+    <div className="flex flex-col items-center gap-6 pt-6">
+      <header className="flex flex-col items-center gap-2 text-center">
+        <Wordmark size={34} />
+        <DoubleRule width={60} className="mt-1" />
       </header>
       <div className="w-full max-w-md">
-        {(() => {
-          switch (status.stage) {
-            case "choose_handle":
-              return <HandleForm />;
-            case "link_lastfm":
-              return <LastfmForm />;
-            case "spotify_explainer":
-              return <SpotifyExplainer />;
-          }
-        })()}
+        {stage === "choose_handle" && <HandleForm />}
+        {stage === "link_lastfm" && <LastfmForm />}
+        {stage === "spotify_explainer" && <SpotifyExplainer />}
       </div>
     </div>
   );

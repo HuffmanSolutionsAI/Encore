@@ -79,11 +79,11 @@ function Star({
       role={interactive ? "button" : undefined}
       tabIndex={interactive ? 0 : -1}
       aria-label={interactive ? `Rate ${index + 1} stars` : undefined}
-      className={`relative inline-block ${interactive ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-encore-brass focus-visible:rounded" : ""}`}
+      className={`relative inline-block ${interactive ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:rounded" : ""}`}
       style={{ width: size, height: size }}
     >
-      {/* Empty star (Dust) sits underneath. */}
-      <StarGlyph size={size} className="absolute inset-0" color="#DCCFB2" />
+      {/* Empty star (theme dust) sits underneath. */}
+      <StarGlyph size={size} className="absolute inset-0" color="var(--e-star-empty)" />
       {/* Filled star (Brass) clipped to `fill` of the width. */}
       <span
         className="absolute inset-0 overflow-hidden"

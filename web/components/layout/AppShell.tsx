@@ -5,175 +5,223 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { useSession } from "@/lib/auth/session";
-import { APP_NAME } from "@/lib/config";
+import { NowPlayingProvider } from "@/lib/now-playing/context";
+import { RateProvider } from "@/components/rating/RateProvider";
+import { NowBar } from "@/components/layout/NowBar";
+import { Wordmark, MonogramE } from "@/components/design-system/Wordmark";
+import { DoubleRule } from "@/components/design-system/DoubleRule";
+import { Avatar } from "@/components/design-system/Avatar";
+import { Icon } from "@/components/design-system/Icon";
+import { BRAND } from "@/components/design-system/tokens";
 
-interface AppShellProps {
-  children: React.ReactNode;
-  /** Optional max-width on the inner content. Default fits library/album. */
-  maxWidth?: "narrow" | "wide";
+interface NavItem {
+  href: string;
+  label: string;
+  icon: (p: { size?: number }) => React.ReactNode;
+  /** Routes that aren't built yet (M6/M7) render disabled with a "Soon" tag. */
+  soon?: boolean;
 }
 
+const PRIMARY_NAV: NavItem[] = [
+  { href: "/", label: "Home", icon: Icon.Home },
+  { href: "/library", label: "Library", icon: Icon.Library },
+  { href: "/friends", label: "Friends", icon: Icon.Friends, soon: true },
+  { href: "/search", label: "Search", icon: Icon.Search, soon: true },
+];
+
+const BOTTOM_NAV: NavItem[] = [
+  { href: "/profile", label: "You", icon: Icon.Profile, soon: true },
+  { href: "/settings", label: "Settings", icon: Icon.Settings, soon: true },
+];
+
 /**
- * Signed-in app chrome: top header with brand, primary nav, and a profile
- * menu in the corner. Wraps the home/library/album pages.
- *
- * Onboarding stages render this too (the profile menu is hidden until a
- * profile exists) so the user never sees a layout shift between
- * onboarding → ready.
+ * The signed-in shell — sidebar nav, slim top bar, scrollable content, and
+ * the persistent live Now-playing bar. Wraps every logged-in page.
  */
-export function AppShell({ children, maxWidth = "wide" }: AppShellProps) {
-  const { status, signOut, devMode } = useSession();
-  const pathname = usePathname();
+export function AppShell({ children }: { children: React.ReactNode }) {
+  const { status } = useSession();
   const router = useRouter();
 
   useEffect(() => {
     if (status.kind === "signed_out") router.replace("/auth/signin");
   }, [status.kind, router]);
 
-  const profile =
-    status.kind === "ready"
-      ? status.profile
-      : status.kind === "onboarding"
-        ? status.profile
-        : undefined;
+  const showChrome = status.kind === "ready";
 
-  const navLinks = profile ? PRIMARY_NAV : [];
+  // Onboarding renders inside a bare brand frame (no nav yet).
+  if (!showChrome) {
+    return (
+      <div className="min-h-screen bg-page">
+        <div className="mx-auto max-w-5xl px-6 py-8">{children}</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex flex-col bg-encore">
-      <header className="sticky top-0 z-20 bg-encore/85 backdrop-blur border-b border-encore-hairline">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
-          <Link href="/" className="font-display text-2xl text-encore-accent leading-none">
-            {APP_NAME}
-          </Link>
-
-          {navLinks.length > 0 && (
-            <nav className="flex items-center gap-1 sm:gap-2">
-              {navLinks.map((item) => {
-                const active =
-                  item.href === "/"
-                    ? pathname === "/"
-                    : pathname?.startsWith(item.href);
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${
-                      active
-                        ? "bg-encore-surface text-encore"
-                        : "text-encore-soft hover:text-encore"
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </nav>
-          )}
-
-          {profile ? (
-            <ProfileMenu
-              handle={profile.handle}
-              displayName={profile.display_name}
-              onSignOut={signOut}
-              devMode={devMode}
-            />
-          ) : (
-            <span className="w-8" aria-hidden />
-          )}
+    <NowPlayingProvider>
+      <RateProvider>
+        <div className="flex min-h-screen w-full bg-page">
+          <Sidebar />
+          <main className="flex-1 min-w-0 flex flex-col relative">
+            <TopBar />
+            <div id="app-scroll" className="flex-1 overflow-y-auto min-h-0">
+              <div className="mx-auto w-full max-w-5xl px-6 sm:px-10 py-8 sm:py-12">
+                {children}
+              </div>
+            </div>
+            <NowBar />
+          </main>
         </div>
-      </header>
-
-      <main className="flex-1 flex flex-col">
-        <div
-          className={`mx-auto w-full px-4 sm:px-6 py-8 sm:py-10 ${
-            maxWidth === "narrow" ? "max-w-xl" : "max-w-5xl"
-          }`}
-        >
-          {children}
-        </div>
-      </main>
-    </div>
+      </RateProvider>
+    </NowPlayingProvider>
   );
 }
 
-const PRIMARY_NAV = [
-  { href: "/", label: "Now playing" },
-  { href: "/library", label: "Library" },
-] as const;
+// ─────────────────────────── Sidebar ───────────────────────────
+
+function Sidebar() {
+  const pathname = usePathname();
+  return (
+    <aside className="w-[244px] flex-none bg-page border-r border-hair flex flex-col px-[18px] pt-[22px] pb-[18px] relative z-[5]">
+      <div className="flex items-center gap-2.5 px-1 pb-3.5">
+        <MonogramE size={28} />
+        <Wordmark size={22} />
+      </div>
+      <DoubleRule width={44} className="ml-1 mb-[18px]" />
+
+      <nav className="flex flex-col gap-1.5">
+        {PRIMARY_NAV.map((item) => (
+          <SidebarItem key={item.href} item={item} active={isActive(pathname, item.href)} />
+        ))}
+      </nav>
+
+      <div className="flex-1" />
+
+      <nav className="flex flex-col gap-1.5 mb-2">
+        {BOTTOM_NAV.map((item) => (
+          <SidebarItem key={item.href} item={item} active={isActive(pathname, item.href)} />
+        ))}
+        <SignOutItem />
+      </nav>
+    </aside>
+  );
+}
+
+function isActive(pathname: string | null, href: string): boolean {
+  if (!pathname) return false;
+  if (href === "/") return pathname === "/";
+  return pathname.startsWith(href);
+}
+
+function SidebarItem({ item, active }: { item: NavItem; active: boolean }) {
+  const Ic = item.icon;
+  const inner = (
+    <span
+      className={`relative flex items-center gap-3 w-full rounded-[10px] px-3.5 py-2.5 text-left transition
+        ${active ? "bg-surface text-fg" : item.soon ? "text-quiet cursor-default" : "text-muted hover:bg-surface/60 hover:text-fg"}`}
+      title={item.soon ? "Coming soon" : undefined}
+    >
+      {active && (
+        <span
+          className="absolute -left-[18px] top-1/2 -translate-y-1/2 rounded"
+          style={{ width: 3, height: 18, background: BRAND.brass }}
+        />
+      )}
+      <Ic size={20} />
+      <span className="text-sm" style={{ fontWeight: active ? 600 : 500, letterSpacing: "-0.005em" }}>
+        {item.label}
+      </span>
+      {item.soon && (
+        <span className="ml-auto text-[9.5px] font-bold uppercase tracking-[0.14em] text-quiet">Soon</span>
+      )}
+    </span>
+  );
+
+  if (item.soon) return <div aria-disabled>{inner}</div>;
+  return (
+    <Link href={item.href} className="block">
+      {inner}
+    </Link>
+  );
+}
+
+function SignOutItem() {
+  const { signOut } = useSession();
+  return (
+    <button
+      onClick={signOut}
+      className="relative flex items-center gap-3 w-full rounded-[10px] px-3.5 py-2.5 text-left text-quiet hover:bg-surface/60 hover:text-fg transition"
+    >
+      <Icon.Logout size={20} />
+      <span className="text-sm font-medium" style={{ letterSpacing: "-0.005em" }}>Sign out</span>
+    </button>
+  );
+}
+
+// ─────────────────────────── Top bar ───────────────────────────
+
+function TopBar() {
+  const { status, signOut } = useSession();
+  const profile = status.kind === "ready" ? status.profile : undefined;
+
+  return (
+    <div
+      className="sticky top-0 z-[4] border-b border-hair flex items-center gap-4 px-10 py-5"
+      style={{ background: "color-mix(in srgb, var(--e-bg) 88%, transparent)", backdropFilter: "blur(10px)" }}
+    >
+      {/* Quiet search affordance — search is M-future; visually present, disabled. */}
+      <div
+        className="flex items-center gap-2.5 bg-surface border border-hair rounded-[10px] px-3.5 py-2 text-quiet max-w-[460px] flex-1"
+        title="Search is coming soon"
+      >
+        <Icon.Search size={16} />
+        <span className="text-[13.5px]">Search albums, artists, or your friends…</span>
+      </div>
+      <div className="flex-1" />
+      {profile && <ProfileMenu handle={profile.handle} displayName={profile.display_name} onSignOut={signOut} />}
+    </div>
+  );
+}
 
 function ProfileMenu({
   handle,
   displayName,
   onSignOut,
-  devMode,
 }: {
   handle: string;
   displayName: string;
   onSignOut: () => void;
-  devMode: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
+  const { devMode } = useSession();
 
   useEffect(() => {
     if (!open) return;
-    function onDocClick(e: MouseEvent) {
-      if (!wrapperRef.current?.contains(e.target as Node)) setOpen(false);
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("mousedown", onDocClick);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDocClick);
-      document.removeEventListener("keydown", onKey);
+    const onDoc = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
     };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
   }, [open]);
 
   return (
-    <div ref={wrapperRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-9 h-9 rounded-full bg-encore-surface border border-encore-hairline flex items-center justify-center text-encore font-semibold text-sm hover:border-encore-brass focus:outline-none focus-visible:ring-2 focus-visible:ring-encore-brass"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label="Account menu"
-      >
-        {initial(displayName)}
+    <div ref={ref} className="relative">
+      <button onClick={() => setOpen((v) => !v)} aria-label="Account" aria-expanded={open} className="block rounded-full">
+        <Avatar name={displayName} size={36} />
       </button>
-
       {open && (
-        <div
-          role="menu"
-          className="absolute right-0 top-11 w-56 bg-encore-surface border border-encore-hairline rounded-card shadow-lg overflow-hidden"
-        >
-          <div className="px-4 py-3 border-b border-encore-hairline">
-            <p className="text-encore text-sm font-semibold truncate">{displayName}</p>
-            <p className="text-encore-faint text-xs truncate">@{handle}</p>
-            {devMode && (
-              <p className="text-encore-brass text-[10px] uppercase tracking-wider mt-1">
-                Dev mode
-              </p>
-            )}
+        <div className="absolute right-0 top-12 w-56 bg-surface border border-hair rounded-card shadow-warm overflow-hidden z-10">
+          <div className="px-4 py-3 border-b border-hair">
+            <p className="t-label truncate">{displayName}</p>
+            <p className="t-caption truncate">@{handle}</p>
+            {devMode && <p className="t-overline mt-1">Dev mode</p>}
           </div>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={onSignOut}
-            className="w-full text-left px-4 py-2 text-sm text-encore-soft hover:bg-encore hover:text-encore"
-          >
+          <button onClick={onSignOut} className="w-full text-left px-4 py-2 text-sm text-muted hover:bg-page hover:text-fg">
             Sign out
           </button>
         </div>
       )}
     </div>
   );
-}
-
-function initial(name: string): string {
-  const trimmed = name.trim();
-  return trimmed.length === 0 ? "?" : trimmed[0]!.toUpperCase();
 }

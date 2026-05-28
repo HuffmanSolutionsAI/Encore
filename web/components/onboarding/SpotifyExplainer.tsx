@@ -16,23 +16,23 @@ export function SpotifyExplainer() {
   const { completeSpotifyStep } = useSession();
 
   return (
-    <Card padding="lg" className="w-full">
+    <Card padding={28} className="w-full">
       <div className="flex flex-col gap-5">
         <header className="flex flex-col items-center gap-2 text-center">
           <h2 className="font-display text-2xl">Connect Spotify.</h2>
           <DoubleRule width={48} />
-          <p className="text-encore-soft text-sm">
+          <p className="text-muted text-sm">
             One-time setup, inside Spotify itself.
           </p>
         </header>
 
-        <ol className="flex flex-col gap-3 text-sm text-encore-soft">
+        <ol className="flex flex-col gap-3 text-sm text-muted">
           <Step n={1}>
-            Open <strong className="text-encore">Spotify → Settings → Apps</strong>{" "}
+            Open <strong className="text-fg">Spotify → Settings → Apps</strong>{" "}
             (or use the link below).
           </Step>
           <Step n={2}>
-            Find <strong className="text-encore">Last.fm</strong> in the list and
+            Find <strong className="text-fg">Last.fm</strong> in the list and
             toggle it on. Sign in to Last.fm if asked.
           </Step>
           <Step n={3}>
@@ -54,7 +54,7 @@ export function SpotifyExplainer() {
           I'm in
         </EncoreButton>
 
-        <p className="text-encore-faint text-xs text-center">
+        <p className="text-quiet text-xs text-center">
           Other listening apps (Apple Music, Tidal, Deezer, YouTube) work too —
           if they scrobble to Last.fm, Encore picks them up.
         </p>
@@ -66,7 +66,7 @@ export function SpotifyExplainer() {
 function Step({ n, children }: { n: number; children: React.ReactNode }) {
   return (
     <li className="flex gap-3">
-      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-encore-brass text-[#241A12] text-xs font-semibold flex items-center justify-center">
+      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brass text-[#241A12] text-xs font-semibold flex items-center justify-center">
         {n}
       </span>
       <span>{children}</span>

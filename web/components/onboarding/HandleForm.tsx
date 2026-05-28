@@ -46,18 +46,18 @@ export function HandleForm() {
   }
 
   return (
-    <Card padding="lg" className="w-full">
+    <Card padding={28} className="w-full">
       <form className="flex flex-col gap-5" onSubmit={submit}>
         <header className="flex flex-col items-center gap-2 text-center">
           <h2 className="font-display text-2xl">Pick a handle.</h2>
           <DoubleRule width={48} />
-          <p className="text-encore-soft text-sm">
+          <p className="text-muted text-sm">
             How friends find you on Encore.
           </p>
         </header>
 
         <label className="flex flex-col gap-1">
-          <span className="text-encore-faint text-xs uppercase tracking-wider">
+          <span className="text-quiet text-xs uppercase tracking-wider">
             Display name
           </span>
           <input
@@ -66,17 +66,17 @@ export function HandleForm() {
             onChange={(e) => setDisplayName(e.target.value)}
             maxLength={80}
             placeholder="Your name"
-            className="bg-encore-surface text-encore px-3 py-2 rounded-card border border-encore-hairline focus:outline-none focus:border-encore-brass"
+            className="bg-surface text-fg px-3 py-2 rounded-card border border-hair focus:outline-none focus:border-brass"
             autoFocus
           />
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-encore-faint text-xs uppercase tracking-wider">
+          <span className="text-quiet text-xs uppercase tracking-wider">
             Handle
           </span>
-          <div className="flex items-stretch rounded-card border border-encore-hairline overflow-hidden bg-encore-surface">
-            <span className="px-3 py-2 text-encore-soft border-r border-encore-hairline select-none">
+          <div className="flex items-stretch rounded-card border border-hair overflow-hidden bg-surface">
+            <span className="px-3 py-2 text-muted border-r border-hair select-none">
               @
             </span>
             <input
@@ -88,15 +88,15 @@ export function HandleForm() {
               autoCapitalize="none"
               autoCorrect="off"
               placeholder="handle"
-              className="bg-transparent text-encore px-3 py-2 flex-1 focus:outline-none"
+              className="bg-transparent text-fg px-3 py-2 flex-1 focus:outline-none"
             />
           </div>
-          <span className="text-encore-faint text-xs">
+          <span className="text-quiet text-xs">
             3–30 chars: lowercase letters, numbers, underscore.
           </span>
         </label>
 
-        {error && <p className="text-encore-soft text-sm">{error}</p>}
+        {error && <p className="text-muted text-sm">{error}</p>}
 
         <EncoreButton type="submit" kind="primary" disabled={!canSubmit}>
           {submitting ? "Saving…" : "Continue"}

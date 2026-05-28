@@ -37,5 +37,12 @@ export function useLibrary(api: RatingsAPI) {
     void load();
   }, [load]);
 
+  // Refresh when a rating is saved anywhere in the app (now-bar, album page…).
+  useEffect(() => {
+    const onRated = () => void load();
+    window.addEventListener("encore:rated", onRated);
+    return () => window.removeEventListener("encore:rated", onRated);
+  }, [load]);
+
   return { state, reload: load };
 }

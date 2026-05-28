@@ -1,346 +1,282 @@
 "use client";
 
-import { use, useState } from "react";
+import { use } from "react";
 import Link from "next/link";
 
 import { useSession } from "@/lib/auth/session";
 import { useAlbumDetail } from "@/lib/hooks/useAlbumDetail";
+import { useRate } from "@/components/rating/RateProvider";
 import { AppShell } from "@/components/layout/AppShell";
+import { SectionHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/design-system/Card";
+import { Button } from "@/components/design-system/Button";
+import { Overline } from "@/components/design-system/Overline";
 import { DoubleRule } from "@/components/design-system/DoubleRule";
-import { EncoreButton } from "@/components/design-system/EncoreButton";
-import { StarRating } from "@/components/design-system/StarRating";
-import { RateModal, type RatingSubject } from "@/components/rating/RateModal";
-import type { AlbumDetail, AlbumHighlight, AlbumTrackRow } from "@/lib/types";
+import { Score } from "@/components/design-system/Score";
+import { StarRow } from "@/components/design-system/StarRow";
+import { AlbumArt } from "@/components/design-system/AlbumArt";
+import { Icon } from "@/components/design-system/Icon";
+import type { AlbumDetail, AlbumTrackRow } from "@/lib/types";
 
-interface AlbumPageProps {
-  params: Promise<{ id: string }>;
+export default function AlbumPage(props: { params: Promise<{ id: string }> }) {
+  const { id } = use(props.params);
+  const { status } = useSession();
+  return (
+    <AppShell>
+      {status.kind === "ready" ? (
+        <AlbumContent id={id} />
+      ) : (
+        <div className="pt-16 text-center t-small">One moment…</div>
+      )}
+    </AppShell>
+  );
 }
 
-/** Build spec F6 album page: scores, tracklist, highlights/skips, personal
- *  coverage. Friends' ratings land in M6. */
-export default function AlbumPage(props: AlbumPageProps) {
-  const { id } = use(props.params);
+function AlbumContent({ id }: { id: string }) {
   const { albums } = useSession();
   const { state, reload } = useAlbumDetail(albums, id);
-  const [ratingSubject, setRatingSubject] = useState<RatingSubject | null>(null);
+  const { openRate } = useRate();
 
   function rateAlbum(detail: AlbumDetail) {
-    setRatingSubject({
-      kind: "catalog_album",
-      id: detail.album.id,
-      title: detail.album.title,
-      artist: detail.album.artist_name,
-      artworkURL: detail.album.artwork_url,
-    });
+    openRate(
+      {
+        kind: "catalog_album",
+        id: detail.album.id,
+        title: detail.album.title,
+        artist: detail.album.artist_name,
+        artworkURL: detail.album.artwork_url,
+      },
+      {
+        initialScore: detail.personal.album_rating?.score ?? null,
+        initialReview: detail.personal.album_rating?.review_text ?? null,
+        onSaved: () => void reload(),
+      },
+    );
   }
 
   function rateTrack(detail: AlbumDetail, track: AlbumTrackRow) {
-    setRatingSubject({
-      kind: "catalog_track",
-      id: track.id,
-      title: track.title,
-      albumTitle: detail.album.title,
-      artist: detail.album.artist_name,
-      artworkURL: detail.album.artwork_url,
-    });
+    openRate(
+      {
+        kind: "catalog_track",
+        id: track.id,
+        title: track.title,
+        albumTitle: detail.album.title,
+        artist: detail.album.artist_name,
+        artworkURL: detail.album.artwork_url,
+      },
+      { initialScore: track.user_score ?? null, onSaved: () => void reload() },
+    );
   }
 
   return (
     <>
-      <AppShell>
-        <div className="flex flex-col gap-6">
-          <Link
-            href="/library"
-            className="text-encore-accent text-sm hover:underline self-start"
-          >
-            ← Library
-          </Link>
+      <Link href="/library" className="inline-flex items-center gap-1 t-small mb-6 hover:text-fg">
+        <Icon.ChevronLeft size={16} /> Library
+      </Link>
 
-          {state.kind === "loading" && (
-            <Card padding="lg" className="text-center">
-              <p className="text-encore-soft">Loading album…</p>
-            </Card>
-          )}
+      {state.kind === "loading" && (
+        <Card padding={32} className="text-center">
+          <p className="t-small">Loading album…</p>
+        </Card>
+      )}
 
-          {state.kind === "error" && (
-            <Card padding="lg" className="text-center">
-              <div className="flex flex-col gap-3">
-                <p className="font-display text-xl">Can't open this album.</p>
-                <p className="text-encore-soft">{state.message}</p>
-                <EncoreButton kind="secondary" onClick={() => void reload()}>
-                  Try again
-                </EncoreButton>
-              </div>
-            </Card>
-          )}
+      {state.kind === "error" && (
+        <Card padding={32} className="text-center">
+          <div className="flex flex-col items-center gap-3">
+            <p className="t-h3">Can&rsquo;t open this album.</p>
+            <p className="t-small">{state.message}</p>
+            <Button variant="ghost" onClick={() => void reload()}>Try again</Button>
+          </div>
+        </Card>
+      )}
 
-          {state.kind === "loaded" && (
-            <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 items-start">
-              <div className="flex flex-col gap-4">
-                <Hero detail={state.detail} />
-                <ScoresPanel
-                  detail={state.detail}
-                  onRateAlbum={() => rateAlbum(state.detail)}
-                />
-              </div>
-              <div className="flex flex-col gap-6">
-                <Tracklist
-                  detail={state.detail}
-                  onRateTrack={(track) => rateTrack(state.detail, track)}
-                />
-                {(state.detail.highlights.length > 0 ||
-                  state.detail.skips.length > 0) && (
-                  <HighlightsPanel detail={state.detail} />
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </AppShell>
-
-      {ratingSubject && (
-        <RateModal
-          subject={ratingSubject}
-          initialScore={initialScore(state, ratingSubject)}
-          initialReview={initialReview(state, ratingSubject)}
-          onClose={() => setRatingSubject(null)}
-          onSaved={() => void reload()}
-        />
+      {state.kind === "loaded" && (
+        <>
+          <Hero detail={state.detail} onRate={() => rateAlbum(state.detail)} />
+          <div className="mt-12 grid grid-cols-1 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] gap-10">
+            <Tracklist detail={state.detail} onRateTrack={(t) => rateTrack(state.detail, t)} />
+            <Highlights detail={state.detail} />
+          </div>
+        </>
       )}
     </>
   );
 }
 
-function initialScore(
-  state: ReturnType<typeof useAlbumDetail>["state"],
-  subject: RatingSubject,
-): number | null {
-  if (state.kind !== "loaded") return null;
-  if (subject.kind === "catalog_album") {
-    return state.detail.personal.album_rating?.score ?? null;
-  }
-  if (subject.kind === "catalog_track") {
-    const t = state.detail.tracks.find((tr) => tr.id === subject.id);
-    return t?.user_score ?? null;
-  }
-  return null;
-}
+// ─────────────────────────── hero ───────────────────────────
 
-function initialReview(
-  state: ReturnType<typeof useAlbumDetail>["state"],
-  subject: RatingSubject,
-): string | null {
-  if (state.kind !== "loaded") return null;
-  if (subject.kind === "catalog_album") {
-    return state.detail.personal.album_rating?.review_text ?? null;
-  }
-  return null;
-}
-
-// MARK: - Sections
-
-function Hero({ detail }: { detail: AlbumDetail }) {
-  return (
-    <div className="flex flex-col gap-3 text-center lg:text-left">
-      <div className="aspect-square w-full max-w-[280px] mx-auto lg:mx-0 rounded-xl overflow-hidden border border-encore-hairline bg-encore-surface flex items-center justify-center">
-        {detail.album.artwork_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={detail.album.artwork_url}
-            alt=""
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <span className="text-encore-faint text-3xl">♪</span>
-        )}
-      </div>
-      <div className="flex flex-col gap-0.5">
-        <h1 className="font-display text-2xl leading-tight">{detail.album.title}</h1>
-        <p className="text-encore-soft">{detail.album.artist_name}</p>
-        {detail.album.release_year && (
-          <p className="text-encore-faint text-sm">{detail.album.release_year}</p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function ScoresPanel({
-  detail,
-  onRateAlbum,
-}: {
-  detail: AlbumDetail;
-  onRateAlbum: () => void;
-}) {
-  return (
-    <Card padding="lg">
-      <div className="flex flex-col gap-5">
-        <div className="grid grid-cols-2 gap-4 items-start text-center">
-          <ScoreColumn
-            label="From songs"
-            score={detail.aggregate.track_derived_score}
-            size={3}
-          />
-          <ScoreColumn
-            label="Direct"
-            score={detail.aggregate.direct_album_score}
-            size={2}
-            sub={`${detail.aggregate.direct_rating_count} ratings`}
-          />
-        </div>
-        <DoubleRule width={80} />
-        <PersonalRow personal={detail.personal} />
-        <EncoreButton kind="brass" icon={<StarGlyph />} onClick={onRateAlbum}>
-          Rate this album
-        </EncoreButton>
-      </div>
-    </Card>
-  );
-}
-
-function ScoreColumn({
-  label,
-  score,
-  size,
-  sub,
-}: {
-  label: string;
-  score: number | null;
-  size: 2 | 3;
-  sub?: string;
-}) {
-  const fontClass = size === 3 ? "text-4xl" : "text-2xl";
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <span className="text-encore-faint text-xs uppercase tracking-wider">
-        {label}
-      </span>
-      <span className={`font-display ${fontClass} text-encore-accent`}>
-        {score == null ? "—" : score.toFixed(2)}
-      </span>
-      {sub && <span className="text-encore-faint text-xs">{sub}</span>}
-    </div>
-  );
-}
-
-function PersonalRow({ personal }: { personal: AlbumDetail["personal"] }) {
+function Hero({ detail, onRate }: { detail: AlbumDetail; onRate: () => void }) {
+  const a = detail.album;
+  const agg = detail.aggregate;
+  const personal = detail.personal;
   const coverage =
     personal.total_tracks > 0
       ? `based on ${personal.rated_tracks} of ${personal.total_tracks} tracks`
       : `based on ${personal.rated_tracks} tracks`;
+
   return (
-    <div className="flex flex-col gap-1">
-      <span className="text-encore-faint text-xs uppercase tracking-wider">
-        Your score
-      </span>
-      {personal.score == null ? (
-        <p className="text-encore-soft">Not yet rated</p>
-      ) : (
-        <p className="font-display text-xl">{personal.score.toFixed(2)}</p>
-      )}
-      <p className="text-encore-faint text-xs">{coverage}</p>
+    <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-10 items-start">
+      <AlbumArt
+        url={a.artwork_url}
+        seed={a.id}
+        label={a.title[0]}
+        size="100%"
+        radius={16}
+        className="shadow-lift max-w-[300px]"
+        style={{ width: "100%", aspectRatio: "1 / 1", height: "auto" }}
+      />
+
+      <div>
+        <Overline>Album{a.release_year ? ` · ${a.release_year}` : ""}</Overline>
+        <h1 className="t-display mt-3" style={{ fontSize: 52 }}>{a.title}</h1>
+        <div className="font-display text-muted mt-1.5" style={{ fontSize: 22 }}>{a.artist_name}</div>
+
+        <DoubleRule width={56} className="my-7" />
+
+        <div className="flex items-end gap-8 flex-wrap">
+          <div>
+            <Score value={agg.track_derived_score} size={80} />
+            <div className="t-caption mt-1">From songs · / 5</div>
+          </div>
+          <div>
+            <Score value={agg.direct_album_score} size={32} />
+            <div className="t-caption mt-1">
+              {agg.direct_rating_count} direct {agg.direct_rating_count === 1 ? "rating" : "ratings"}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <Overline>Your score</Overline>
+          <div className="flex items-center gap-3 mt-1.5">
+            {personal.score != null ? (
+              <>
+                <span className="font-display text-fg" style={{ fontWeight: 600, fontSize: 22 }}>
+                  {personal.score.toFixed(1)}
+                </span>
+                <StarRow value={personal.score} size={15} />
+              </>
+            ) : (
+              <span className="t-small">Not yet rated</span>
+            )}
+          </div>
+          <div className="t-caption mt-1">{coverage}</div>
+        </div>
+
+        {/* The one brass "Worth an encore?" in the product. */}
+        <div className="mt-7">
+          <Button variant="brass" size="lg" icon={<Icon.Music size={16} />} onClick={onRate}>
+            Worth an encore?
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
 
-function Tracklist({
-  detail,
-  onRateTrack,
-}: {
-  detail: AlbumDetail;
-  onRateTrack: (track: AlbumTrackRow) => void;
-}) {
+// ─────────────────────────── tracklist ───────────────────────────
+
+function Tracklist({ detail, onRateTrack }: { detail: AlbumDetail; onRateTrack: (t: AlbumTrackRow) => void }) {
   if (detail.tracks.length === 0) {
     return (
-      <p className="text-center text-encore-soft text-sm">
-        No tracks in the catalog for this album.
-      </p>
+      <div>
+        <SectionHeader title="Tracks" subtitle="No tracks in the catalog for this record yet." />
+      </div>
     );
   }
   return (
-    <div className="flex flex-col gap-2">
-      <h2 className="text-encore-faint text-xs uppercase tracking-wider">Tracks</h2>
-      <Card padding="none">
-        <ul className="divide-y divide-encore-hairline">
-          {detail.tracks.map((track) => (
-            <li key={track.id}>
-              <button
-                type="button"
-                onClick={() => onRateTrack(track)}
-                className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-encore-surface"
-              >
-                <span className="text-encore-faint text-xs w-6 text-right tabular-nums">
-                  {track.track_number}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-encore text-sm truncate">{track.title}</p>
-                  {track.weighted_score != null && (
-                    <p className="text-encore-faint text-xs">
-                      crowd {track.weighted_score.toFixed(2)} · {track.rating_count}
-                    </p>
-                  )}
-                </div>
-                {track.user_score != null ? (
-                  <StarRating score={track.user_score} size={12} />
-                ) : (
-                  <span className="text-encore-faint text-xs">★</span>
-                )}
-              </button>
-            </li>
-          ))}
-        </ul>
+    <div>
+      <SectionHeader title="Tracks" subtitle={`${detail.tracks.length} on the record · rate any on tap.`} />
+      <Card padding={0} className="mt-5 overflow-hidden">
+        <div className="grid grid-cols-[36px_1fr_64px_120px] gap-4 px-5 py-3 border-b border-hair text-[10.5px] font-bold uppercase tracking-[0.16em] text-quiet">
+          <span>#</span>
+          <span>Title</span>
+          <span>Len</span>
+          <span>Your rating</span>
+        </div>
+        {detail.tracks.map((trk, i) => (
+          <button
+            key={trk.id}
+            onClick={() => onRateTrack(trk)}
+            className={`grid grid-cols-[36px_1fr_64px_120px] gap-4 items-center w-full text-left px-5 py-3.5 hover:bg-page transition ${
+              i === detail.tracks.length - 1 ? "" : "border-b border-hair"
+            }`}
+          >
+            <span className="t-caption tabular-nums">{trk.track_number}</span>
+            <span className="min-w-0">
+              <span className="block text-fg truncate" style={{ fontSize: 15, letterSpacing: "-0.005em" }}>{trk.title}</span>
+              {trk.weighted_score != null && (
+                <span className="t-caption">crowd {trk.weighted_score.toFixed(1)} · {trk.rating_count}</span>
+              )}
+            </span>
+            <span className="t-caption tabular-nums">{formatDuration(trk.duration_ms)}</span>
+            <span className="flex items-center gap-2">
+              {trk.user_score != null ? (
+                <>
+                  <StarRow value={trk.user_score} size={13} />
+                  <span className="text-brass font-bold text-[12.5px] tabular-nums">{trk.user_score.toFixed(1)}</span>
+                </>
+              ) : (
+                <span className="t-caption">Rate</span>
+              )}
+            </span>
+          </button>
+        ))}
       </Card>
     </div>
   );
 }
 
-function HighlightsPanel({ detail }: { detail: AlbumDetail }) {
+// ─────────────────────────── highlights & skips ───────────────────────────
+
+function Highlights({ detail }: { detail: AlbumDetail }) {
+  if (detail.highlights.length === 0 && detail.skips.length === 0) {
+    return (
+      <div>
+        <SectionHeader title="Highlights" subtitle="They appear once tracks are rated." />
+      </div>
+    );
+  }
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-6">
       {detail.highlights.length > 0 && (
-        <HighlightCard title="Highlights" items={detail.highlights} />
+        <div>
+          <SectionHeader title="Highlights" />
+          <Card padding={18} className="mt-5">
+            <ul className="flex flex-col gap-2">
+              {detail.highlights.map((h) => (
+                <li key={h.id} className="flex items-center justify-between gap-3">
+                  <span className="text-fg text-sm truncate">{h.title}</span>
+                  <Score value={h.weighted} size={16} />
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </div>
       )}
       {detail.skips.length > 0 && (
-        <HighlightCard title="Skips" items={detail.skips} />
+        <div>
+          <SectionHeader title="Skips" />
+          <Card padding={18} className="mt-5">
+            <ul className="flex flex-col gap-2">
+              {detail.skips.map((h) => (
+                <li key={h.id} className="flex items-center justify-between gap-3">
+                  <span className="text-fg text-sm truncate">{h.title}</span>
+                  <Score value={h.weighted} size={16} />
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </div>
       )}
     </div>
   );
 }
 
-function HighlightCard({
-  title,
-  items,
-}: {
-  title: string;
-  items: AlbumHighlight[];
-}) {
-  return (
-    <Card padding="md">
-      <div className="flex flex-col gap-2">
-        <h3 className="text-encore-accent text-sm font-medium">{title}</h3>
-        <ul className="flex flex-col gap-1">
-          {items.map((item) => (
-            <li key={item.id} className="flex items-center justify-between gap-3">
-              <span className="text-encore text-sm truncate">{item.title}</span>
-              <span className="text-encore-faint text-xs tabular-nums">
-                {item.weighted.toFixed(2)}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </Card>
-  );
-}
-
-function StarGlyph() {
-  return (
-    <svg viewBox="0 0 24 24" width={18} height={18} aria-hidden>
-      <path
-        d="M12 2.5l2.928 6.193 6.822.92-4.987 4.65 1.232 6.737L12 17.77l-5.995 3.23 1.232-6.737L2.25 9.613l6.822-.92L12 2.5z"
-        fill="currentColor"
-      />
-    </svg>
-  );
+function formatDuration(ms: number | null): string {
+  if (ms == null) return "—";
+  const total = Math.round(ms / 1000);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
 }

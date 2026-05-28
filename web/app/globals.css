@@ -2,57 +2,228 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Semantic brand tokens that resolve per light/dark mode. Build spec
-   Section 8.1: the base colors are the only acceptable values. */
+/* =========================================================================
+   Encore — token system. Ported from the design system's colors_and_type.css
+   (Claude Design handoff). Brass is reserved for scores, stars, and the one
+   "Worth an encore?" brass button. Primary actions are Cocoa. Paper-first
+   surfaces, hairline borders, warm low shadows — print, not glass.
+   ========================================================================= */
+
 :root {
-  --encore-background: #F4EDDF; /* paper */
-  --encore-surface:    #FBF7EC; /* surface */
-  --encore-text:       #211B14; /* ink */
-  --encore-text-soft:  rgb(33 27 20 / 0.75);
-  --encore-text-faint: rgb(33 27 20 / 0.55);
-  --encore-accent:     #3D2F22; /* cocoa */
-  --encore-accent-deep:#241A12; /* cocoa-deep */
-  --encore-hairline:   #DCCFB2; /* dust */
-  --encore-brass:      #B98C3F; /* brass */
+  /* ---- core palette (constants) ---- */
+  --ink: #211B14;
+  --paper: #F4EDDF;
+  --cocoa: #3D2F22;
+  --cocoa-deep: #241A12;
+  --brass: #B98C3F;
+  --surface: #FBF7EC;
+  --surface-raised: #FFFBF1;
+  --dust: #DCCFB2;
+  --ember: #8C6A47;
+  --ink-60: #5B4F3E;
+  --ink-50: #6D6151;
+  --ink-40: #9C8F78;
+  --night: #1B1712;
+  --night-surface: #2A231C;
+  --night-raised: #352A20;
+  --night-border: #3A3026;
+  --paper-deep: #E8D9C2;
+  --clay: #8C6A47;
+
+  /* ---- semantic (light = "the page") ---- */
+  --e-bg: var(--paper);
+  --e-surface: var(--surface);
+  --e-surface-raised: var(--surface-raised);
+  --e-fg: var(--ink);
+  --e-fg-muted: var(--ink-60);
+  --e-fg-quiet: var(--ink-50);
+  --e-border: var(--dust);
+  --e-brand: var(--cocoa);
+  --e-brand-hover: var(--cocoa-deep);
+  --e-star-empty: var(--dust);
+
+  /* ---- type ---- */
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-text: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  /* ---- radii ---- */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-card: 14px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+
+  /* ---- shadows (warm-cast, low) ---- */
+  --shadow-card: 0 2px 6px rgba(33, 27, 20, 0.05);
+  --shadow-md: 0 6px 18px rgba(33, 27, 20, 0.1);
+  --shadow-lg: 0 18px 40px rgba(33, 27, 20, 0.18);
+  --shadow-modal: 0 30px 70px rgba(33, 27, 20, 0.32);
 }
 
+/* dark = "the archive after hours" — opt in via media query or [data-theme] */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --encore-background: #1B1712; /* night */
-    --encore-surface:    #2A231C; /* night-surface */
-    --encore-text:       #F4EDDF; /* paper */
-    --encore-text-soft:  rgb(244 237 223 / 0.75);
-    --encore-text-faint: rgb(244 237 223 / 0.55);
-    --encore-accent:     #8C6A47; /* clay (lifted cocoa) */
-    --encore-accent-deep:#3D2F22;
-    --encore-hairline:   #3D2F22;
-    --encore-brass:      #B98C3F;
+  :root:not([data-theme="light"]) {
+    --e-bg: var(--night);
+    --e-surface: var(--night-surface);
+    --e-surface-raised: var(--night-raised);
+    --e-fg: var(--paper);
+    --e-fg-muted: var(--paper-deep);
+    --e-fg-quiet: var(--ink-40);
+    --e-border: var(--night-border);
+    --e-brand: var(--clay);
+    --e-brand-hover: #a07a52;
+    --e-star-empty: #4A3F30;
   }
 }
+[data-theme="dark"] {
+  --e-bg: var(--night);
+  --e-surface: var(--night-surface);
+  --e-surface-raised: var(--night-raised);
+  --e-fg: var(--paper);
+  --e-fg-muted: var(--paper-deep);
+  --e-fg-quiet: var(--ink-40);
+  --e-border: var(--night-border);
+  --e-brand: var(--clay);
+  --e-brand-hover: #a07a52;
+  --e-star-empty: #4A3F30;
+}
 
-html, body {
-  background: var(--encore-background);
-  color: var(--encore-text);
-  font-family: var(--font-inter), system-ui, sans-serif;
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--e-bg);
+  color: var(--e-fg);
+  font-family: var(--font-text);
+  letter-spacing: -0.005em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-@layer utilities {
-  .text-encore        { color: var(--encore-text); }
-  .text-encore-soft   { color: var(--encore-text-soft); }
-  .text-encore-faint  { color: var(--encore-text-faint); }
-  .text-encore-accent { color: var(--encore-accent); }
-  .text-encore-brass  { color: var(--encore-brass); }
+/* Warm, restrained scrollbar */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(33, 27, 20, 0.18);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(33, 27, 20, 0.28);
+  background-clip: content-box;
+}
+[data-theme="dark"] *::-webkit-scrollbar-thumb {
+  background: rgba(244, 237, 223, 0.18);
+  background-clip: content-box;
+  border: 2px solid transparent;
+}
 
-  .bg-encore         { background-color: var(--encore-background); }
-  .bg-encore-surface { background-color: var(--encore-surface); }
-  .bg-encore-accent  { background-color: var(--encore-accent); }
-  .bg-encore-accent-deep { background-color: var(--encore-accent-deep); }
-  .bg-encore-brass   { background-color: var(--encore-brass); }
+/* Focus ring — brass, 2px, 2px offset. Never the default blue. */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
 
-  .border-encore-hairline { border-color: var(--encore-hairline); }
+@layer components {
+  /* ---- editorial type scale (Fraunces display / Inter text) ---- */
+  .t-display {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(40px, 6vw, 58px);
+    line-height: 1.03;
+    letter-spacing: -0.022em;
+    color: var(--e-fg);
+  }
+  .t-h1 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 42px;
+    line-height: 1.05;
+    letter-spacing: -0.018em;
+    color: var(--e-fg);
+  }
+  .t-h2 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 30px;
+    line-height: 1.1;
+    letter-spacing: -0.012em;
+    color: var(--e-fg);
+  }
+  .t-h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 21px;
+    line-height: 1.25;
+    color: var(--e-fg);
+  }
+  /* Editorial italic — subtitles, blurbs, pull quotes */
+  .t-editorial {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 400;
+    color: var(--e-fg-muted);
+    line-height: 1.45;
+  }
+  .t-lead {
+    font-family: var(--font-text);
+    font-size: 19px;
+    line-height: 1.55;
+    color: var(--e-fg-muted);
+  }
+  .t-body {
+    font-family: var(--font-text);
+    font-size: 16px;
+    line-height: 1.62;
+    color: var(--e-fg);
+  }
+  .t-small {
+    font-family: var(--font-text);
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--e-fg-muted);
+  }
+  .t-caption {
+    font-family: var(--font-text);
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--e-fg-quiet);
+  }
+  .t-overline {
+    font-family: var(--font-text);
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--brass);
+  }
+  .t-score {
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: var(--brass);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
 
-  .font-display { font-family: var(--font-fraunces), Georgia, serif; }
-  .font-sans    { font-family: var(--font-inter), system-ui, sans-serif; }
+  /* ---- the double rule — Encore's signature divider ---- */
+  .drule {
+    display: block;
+    height: 6px;
+    border-top: 2px solid var(--brass);
+    border-bottom: 2px solid var(--brass);
+  }
+  .drule-ink {
+    border-color: var(--ink);
+  }
 }
