@@ -10,7 +10,7 @@ import { DoubleRule } from "@/components/design-system/DoubleRule";
 import { EncoreButton } from "@/components/design-system/EncoreButton";
 
 export default function SignInPage() {
-  const { signIn, status } = useSession();
+  const { signIn, status, devMode } = useSession();
   const router = useRouter();
   const configured = isRemoteConfigured();
   const errorMessage = status.kind === "signed_out" ? status.error : undefined;
@@ -33,19 +33,39 @@ export default function SignInPage() {
         <Card padding="lg" className="w-full">
           <div className="flex flex-col gap-5 text-center">
             <h2 className="font-display text-2xl">Welcome.</h2>
-            <p className="text-encore-soft">
-              Sign in with Apple to start rating what you're listening to.
-            </p>
-            <div className="pt-1">
-              <EncoreButton
-                kind="primary"
-                onClick={() => void signIn()}
-                disabled={!configured}
-                icon={<AppleGlyph />}
-              >
-                Continue with Apple
-              </EncoreButton>
-            </div>
+            {devMode ? (
+              <>
+                <p className="text-encore-soft">
+                  Running in dev mode — sign in as a local user. Each click
+                  mints a new account.
+                </p>
+                <div className="pt-1">
+                  <EncoreButton
+                    kind="primary"
+                    onClick={() => void signIn()}
+                    disabled={!configured}
+                  >
+                    Sign in as dev
+                  </EncoreButton>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-encore-soft">
+                  Sign in with Apple to start rating what you're listening to.
+                </p>
+                <div className="pt-1">
+                  <EncoreButton
+                    kind="primary"
+                    onClick={() => void signIn()}
+                    disabled={!configured}
+                    icon={<AppleGlyph />}
+                  >
+                    Continue with Apple
+                  </EncoreButton>
+                </div>
+              </>
+            )}
             {errorMessage && (
               <p className="text-sm text-encore-soft">{errorMessage}</p>
             )}
@@ -56,12 +76,21 @@ export default function SignInPage() {
           <Card padding="md" className="w-full">
             <div className="text-encore-soft text-sm space-y-2">
               <p className="font-semibold text-encore">Not configured yet.</p>
-              <p>
-                Set <code className="font-mono">NEXT_PUBLIC_*</code> values in
-                <code className="font-mono"> web/.env.local</code> from
-                <code className="font-mono"> terraform output</code> to enable
-                sign-in.
-              </p>
+              {devMode ? (
+                <p>
+                  Dev mode needs <code className="font-mono">NEXT_PUBLIC_API_BASE_URL</code>{" "}
+                  in <code className="font-mono">web/.env.local</code>. Default is{" "}
+                  <code className="font-mono">http://localhost:3001</code> when the API
+                  is running locally.
+                </p>
+              ) : (
+                <p>
+                  Set <code className="font-mono">NEXT_PUBLIC_*</code> values in
+                  <code className="font-mono"> web/.env.local</code> from
+                  <code className="font-mono"> terraform output</code> to enable
+                  sign-in.
+                </p>
+              )}
             </div>
           </Card>
         )}

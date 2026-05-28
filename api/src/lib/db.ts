@@ -6,12 +6,27 @@ let pool: Pool | undefined;
 /**
  * A PostgreSQL connection pool, created lazily and reused across warm Lambda
  * invocations. `max: 1` keeps RDS connection use bounded as Lambda scales out.
+ *
+ * Two ways to configure the connection:
+ *   - `DATABASE_URL` (local dev — direct connection string, no SSL)
+ *   - `DB_SECRET_ARN` (production — JSON blob in Secrets Manager)
  */
 export async function getPool(): Promise<Pool> {
   if (pool) return pool;
 
+  const directURL = process.env.DATABASE_URL;
+  if (directURL) {
+    pool = new Pool({
+      connectionString: directURL,
+      max: 4,
+      idleTimeoutMillis: 30_000,
+      connectionTimeoutMillis: 5_000,
+    });
+    return pool;
+  }
+
   const arn = process.env.DB_SECRET_ARN;
-  if (!arn) throw new Error("DB_SECRET_ARN is not set");
+  if (!arn) throw new Error("Set DATABASE_URL (local) or DB_SECRET_ARN (AWS)");
 
   const s = await getSecret(arn);
   pool = new Pool({

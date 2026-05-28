@@ -11,8 +11,12 @@ interface UserInfoResponse {
 const ERROR_NO_USER = 6;
 
 async function lastfmKey(): Promise<string> {
+  // Local dev sets the key directly via env var.
+  const direct = process.env.LASTFM_API_KEY;
+  if (direct) return direct;
+
   const arn = process.env.THIRDPARTY_SECRET_ARN;
-  if (!arn) throw new Error("THIRDPARTY_SECRET_ARN is not set");
+  if (!arn) throw new Error("Set LASTFM_API_KEY (local) or THIRDPARTY_SECRET_ARN (AWS)");
   const { LASTFM_API_KEY } = await getSecret(arn);
   if (!LASTFM_API_KEY) {
     throw new HttpError(503, "lastfm_unconfigured", "Last.fm API key is not set");

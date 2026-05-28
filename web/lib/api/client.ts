@@ -32,6 +32,13 @@ export class APIError extends Error {
 }
 
 export type TokenProvider = () => Promise<string | null>;
+/**
+ * Returns the auth headers to attach to every request, or `null` when the
+ * session is signed out. Production wraps this around the Cognito access
+ * token (`Authorization: Bearer …`); local dev sends `x-dev-user-id`
+ * instead.
+ */
+export type AuthHeaderProvider = () => Promise<Record<string, string> | null>;
 
 interface RequestOptions {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
@@ -40,15 +47,15 @@ interface RequestOptions {
 }
 
 export class APIClient {
-  constructor(private readonly tokenProvider: TokenProvider) {}
+  constructor(private readonly authHeaders: AuthHeaderProvider) {}
 
   async request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
     if (!remoteConfig.apiBaseURL) {
       throw new APIError("not_configured");
     }
 
-    const token = await this.tokenProvider();
-    if (!token) throw new APIError("unauthorized");
+    const auth = await this.authHeaders();
+    if (!auth) throw new APIError("unauthorized");
 
     const url = new URL(joinPath(remoteConfig.apiBaseURL, path));
     if (opts.query) {
@@ -59,7 +66,7 @@ export class APIClient {
 
     const headers: Record<string, string> = {
       Accept: "application/json",
-      Authorization: `Bearer ${token}`,
+      ...auth,
     };
     let body: string | undefined;
     if (opts.body !== undefined) {

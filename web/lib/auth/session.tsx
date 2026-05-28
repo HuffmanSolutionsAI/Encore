@@ -16,6 +16,7 @@ import { LastfmAPI } from "@/lib/api/lastfm";
 import { NowPlayingAPI } from "@/lib/api/nowPlaying";
 import { RatingsAPI } from "@/lib/api/ratings";
 import { UsersAPI } from "@/lib/api/users";
+import { remoteConfig } from "@/lib/config";
 import type { UserProfile } from "@/lib/types";
 import {
   AuthError,
@@ -25,6 +26,7 @@ import {
   startSignIn as kickoffSignIn,
   startSignOut as kickoffSignOut,
 } from "./cognito";
+import { clearDevUserID, createDevUserID, loadDevUserID } from "./dev";
 import { clearTokens, isExpired, loadTokens, saveTokens } from "./tokens";
 
 const SPOTIFY_STEP_KEY = "encore.onboarding.spotify_done";
@@ -57,25 +59,37 @@ interface SessionContextValue {
   completeSpotifyStep: () => void;
   /** Called by /auth/callback after exchanging the code for tokens. */
   hydrateAfterCallback: () => Promise<string>;
+  /** True when running with NEXT_PUBLIC_DEV_MODE=true. */
+  devMode: boolean;
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null);
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<SessionStatus>({ kind: "launching" });
+  const devMode = remoteConfig.devMode;
 
-  // The tokens object is held in a ref so the API client's token provider
-  // (a long-lived closure) always sees the latest version without
-  // re-creating the client on every refresh.
-  const tokensRef = useRef(loadTokens());
+  // Cognito-mode state.
+  const tokensRef = useRef(devMode ? null : loadTokens());
   const pendingRefreshRef = useRef<Promise<string | null> | null>(null);
 
-  // Stable API client whose token provider refreshes transparently.
+  // Dev-mode state.
+  const devUserIDRef = useRef<string | null>(devMode ? loadDevUserID() : null);
+
+  // Stable API client. The auth-header provider picks the right path based
+  // on the configured mode.
   const api = useMemo(() => {
-    return new APIClient(async () => {
+    return new APIClient(async (): Promise<Record<string, string> | null> => {
+      if (devMode) {
+        const id = devUserIDRef.current;
+        return id ? { "x-dev-user-id": id } : null;
+      }
+
       const current = tokensRef.current;
       if (!current) return null;
-      if (!isExpired(current)) return current.accessToken;
+      if (!isExpired(current)) {
+        return { Authorization: `Bearer ${current.accessToken}` };
+      }
 
       // Coalesce concurrent refreshes.
       if (!pendingRefreshRef.current) {
@@ -96,9 +110,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           }
         })();
       }
-      return pendingRefreshRef.current;
+      const accessToken = await pendingRefreshRef.current;
+      return accessToken ? { Authorization: `Bearer ${accessToken}` } : null;
     });
-  }, []);
+  }, [devMode]);
 
   const users = useMemo(() => new UsersAPI(api), [api]);
   const lastfm = useMemo(() => new LastfmAPI(api), [api]);
@@ -132,17 +147,23 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       // Treat unauthorized as signed-out; any other error stays
       // signed-out with a recovery message.
-      tokensRef.current = null;
-      clearTokens();
+      if (devMode) {
+        devUserIDRef.current = null;
+        clearDevUserID();
+      } else {
+        tokensRef.current = null;
+        clearTokens();
+      }
       const message =
         err instanceof Error ? err.message : "Couldn't reach Encore.";
       setStatus({ kind: "signed_out", error: message });
     }
-  }, [advanceWithProfile, users]);
+  }, [advanceWithProfile, devMode, users]);
 
   // Bootstrap on mount.
   useEffect(() => {
-    if (tokensRef.current) {
+    const hasSession = devMode ? !!devUserIDRef.current : !!tokensRef.current;
+    if (hasSession) {
       void loadProfile();
     } else {
       setStatus({ kind: "signed_out" });
@@ -151,6 +172,20 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = useCallback(async () => {
+    if (devMode) {
+      try {
+        devUserIDRef.current = createDevUserID();
+        await loadProfile();
+      } catch (err) {
+        setStatus({
+          kind: "signed_out",
+          error:
+            err instanceof Error ? err.message : "Couldn't start dev sign-in.",
+        });
+      }
+      return;
+    }
+
     try {
       await kickoffSignIn();
     } catch (err) {
@@ -160,16 +195,22 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           err instanceof Error ? err.message : "Couldn't start sign-in.",
       });
     }
-  }, []);
+  }, [devMode, loadProfile]);
 
   const signOut = useCallback(() => {
-    tokensRef.current = null;
-    clearTokens();
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(SPOTIFY_STEP_KEY);
     }
+    if (devMode) {
+      devUserIDRef.current = null;
+      clearDevUserID();
+      setStatus({ kind: "signed_out" });
+      return;
+    }
+    tokensRef.current = null;
+    clearTokens();
     kickoffSignOut();
-  }, []);
+  }, [devMode]);
 
   const setProfile = useCallback(
     (profile: UserProfile) => advanceWithProfile(profile),
@@ -189,6 +230,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const hydrateAfterCallback = useCallback(async () => {
+    if (devMode) throw new AuthError("not_configured", "Callback isn't used in dev mode");
     const url = new URL(window.location.href);
     const code = url.searchParams.get("code");
     const state = url.searchParams.get("state");
@@ -199,7 +241,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     const returnTo = consumeReturnTo();
     await loadProfile();
     return returnTo;
-  }, [loadProfile]);
+  }, [devMode, loadProfile]);
 
   const value: SessionContextValue = useMemo(
     () => ({
@@ -215,6 +257,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       setProfile,
       completeSpotifyStep,
       hydrateAfterCallback,
+      devMode,
     }),
     [
       status,
@@ -229,6 +272,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       setProfile,
       completeSpotifyStep,
       hydrateAfterCallback,
+      devMode,
     ],
   );
 

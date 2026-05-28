@@ -60,23 +60,18 @@ EncoreTests/          Parked — original XCTest sources
 
 ## Getting started
 
-### Web app
+### Run locally (no AWS account)
 
-```sh
-cd web
-cp .env.local.example .env.local      # fill from `terraform output`
-npm install
-npm run dev                            # http://localhost:3000
-```
+The whole stack runs on your laptop: Postgres in Docker, the API as a Node
+server, the web app via `next dev`, and a "Sign in as dev" shortcut that
+bypasses Cognito. See [`docs/LOCAL_DEV.md`](docs/LOCAL_DEV.md) for the
+~3-minute setup.
 
-### Backend (AWS)
+### Deploy to AWS
 
-1. Build the API bundle: `cd api && npm install && npm run build`.
-2. Provision infrastructure: `cd infra`, copy `terraform.tfvars.example` to `terraform.tfvars`,
-   then `terraform init && terraform apply`. See `infra/README.md`.
-3. Apply the schema migration in `api/migrations/` against the RDS instance (see `api/README.md`).
-4. Take the `terraform output` values into `web/.env.local`. Database credentials and third-party
-   keys live in AWS Secrets Manager — never committed, never shipped to the browser.
+When you're ready for a public URL, [`infra/DEPLOY.md`](infra/DEPLOY.md)
+walks you through provisioning RDS + Cognito + Lambda + API Gateway +
+Amplify Hosting with Terraform.
 
 ## Conventions
 
