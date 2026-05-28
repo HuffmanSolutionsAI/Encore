@@ -1,11 +1,11 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 import { useSession } from "@/lib/auth/session";
 import { useAlbumDetail } from "@/lib/hooks/useAlbumDetail";
+import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/design-system/Card";
 import { DoubleRule } from "@/components/design-system/DoubleRule";
 import { EncoreButton } from "@/components/design-system/EncoreButton";
@@ -21,14 +21,9 @@ interface AlbumPageProps {
  *  coverage. Friends' ratings land in M6. */
 export default function AlbumPage(props: AlbumPageProps) {
   const { id } = use(props.params);
-  const { albums, status } = useSession();
-  const router = useRouter();
+  const { albums } = useSession();
   const { state, reload } = useAlbumDetail(albums, id);
   const [ratingSubject, setRatingSubject] = useState<RatingSubject | null>(null);
-
-  useEffect(() => {
-    if (status.kind === "signed_out") router.replace("/auth/signin");
-  }, [status.kind, router]);
 
   function rateAlbum(detail: AlbumDetail) {
     setRatingSubject({
@@ -53,13 +48,14 @@ export default function AlbumPage(props: AlbumPageProps) {
 
   return (
     <>
-      <main className="min-h-screen flex flex-col items-center px-4 py-10">
-        <div className="w-full max-w-2xl flex flex-col gap-6">
-          <header className="flex flex-col items-center gap-2 text-center">
-            <Link href="/library" className="text-encore-accent text-sm underline">
-              ← Library
-            </Link>
-          </header>
+      <AppShell>
+        <div className="flex flex-col gap-6">
+          <Link
+            href="/library"
+            className="text-encore-accent text-sm hover:underline self-start"
+          >
+            ← Library
+          </Link>
 
           {state.kind === "loading" && (
             <Card padding="lg" className="text-center">
@@ -80,24 +76,28 @@ export default function AlbumPage(props: AlbumPageProps) {
           )}
 
           {state.kind === "loaded" && (
-            <>
-              <Hero detail={state.detail} />
-              <ScoresPanel
-                detail={state.detail}
-                onRateAlbum={() => rateAlbum(state.detail)}
-              />
-              <Tracklist
-                detail={state.detail}
-                onRateTrack={(track) => rateTrack(state.detail, track)}
-              />
-              {(state.detail.highlights.length > 0 ||
-                state.detail.skips.length > 0) && (
-                <HighlightsPanel detail={state.detail} />
-              )}
-            </>
+            <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 items-start">
+              <div className="flex flex-col gap-4">
+                <Hero detail={state.detail} />
+                <ScoresPanel
+                  detail={state.detail}
+                  onRateAlbum={() => rateAlbum(state.detail)}
+                />
+              </div>
+              <div className="flex flex-col gap-6">
+                <Tracklist
+                  detail={state.detail}
+                  onRateTrack={(track) => rateTrack(state.detail, track)}
+                />
+                {(state.detail.highlights.length > 0 ||
+                  state.detail.skips.length > 0) && (
+                  <HighlightsPanel detail={state.detail} />
+                )}
+              </div>
+            </div>
           )}
         </div>
-      </main>
+      </AppShell>
 
       {ratingSubject && (
         <RateModal
@@ -142,8 +142,8 @@ function initialReview(
 
 function Hero({ detail }: { detail: AlbumDetail }) {
   return (
-    <div className="flex flex-col items-center gap-3 text-center">
-      <div className="w-56 h-56 rounded-xl overflow-hidden border border-encore-hairline bg-encore-surface flex items-center justify-center">
+    <div className="flex flex-col gap-3 text-center lg:text-left">
+      <div className="aspect-square w-full max-w-[280px] mx-auto lg:mx-0 rounded-xl overflow-hidden border border-encore-hairline bg-encore-surface flex items-center justify-center">
         {detail.album.artwork_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -155,11 +155,13 @@ function Hero({ detail }: { detail: AlbumDetail }) {
           <span className="text-encore-faint text-3xl">♪</span>
         )}
       </div>
-      <h1 className="font-display text-3xl">{detail.album.title}</h1>
-      <p className="text-encore-soft">{detail.album.artist_name}</p>
-      {detail.album.release_year && (
-        <p className="text-encore-faint text-sm">{detail.album.release_year}</p>
-      )}
+      <div className="flex flex-col gap-0.5">
+        <h1 className="font-display text-2xl leading-tight">{detail.album.title}</h1>
+        <p className="text-encore-soft">{detail.album.artist_name}</p>
+        {detail.album.release_year && (
+          <p className="text-encore-faint text-sm">{detail.album.release_year}</p>
+        )}
+      </div>
     </div>
   );
 }
