@@ -21,11 +21,15 @@ same one the iOS app was talking to.
 
 ## Status
 
-**Milestone 0 — Foundations (web)** in progress: Next.js 15 + Tailwind scaffold with the brand
-design system. Backend (M0–M4 worth of Lambda + RDS work) is already on trunk.
+**All MVP milestones (M0–M8) are implemented on the web client**, against the AWS backend:
+onboarding, now-playing, rate & review, the scoring algorithm + album pages, library
+(search/filter/sort), friends + feed + profiles, data export (CSV/JSON), and a reliability
+pass (theme system, error boundary, branded 404). The UI follows the Encore Design System
+exported from Claude Design.
 
-Remaining milestones: M1 Onboarding · M2 Now-playing · M3 Rate & review · M4 Catalog & album
-pages · M5 Library · M6 Friends · M7 Data export · M8 Reliability & beta.
+Not yet done: a production AWS deploy (run locally meanwhile — see
+[`docs/LOCAL_DEV.md`](docs/LOCAL_DEV.md)), a mobile-responsive sidebar, and global
+album/artist search.
 
 ## Stack
 

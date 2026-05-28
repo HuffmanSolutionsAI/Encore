@@ -62,5 +62,12 @@ EncoreTests/          # Parked — original XCTest sources
 Build in order; each ends shippable. The feature scope mirrors the original iOS milestones —
 only the client platform has changed.
 
-M0 Foundations · **M1 Onboarding** · M2 Now-playing · M3 Rate & review · M4 Catalog & album pages ·
-M5 Library · M6 Friends · M7 Data export · M8 Reliability & beta.
+M0 Foundations · M1 Onboarding · M2 Now-playing · M3 Rate & review · M4 Catalog & album pages ·
+M5 Library · M6 Friends · M7 Data export · M8 Reliability & beta — **all implemented on the web
+client.** The UI follows the Encore Design System (Claude Design handoff): editorial "printed
+page" aesthetic, sidebar shell, persistent now-playing bar, brass reserved for scores/stars and
+the single album rate CTA.
+
+Remaining before a real beta: stand up AWS (or run locally — see `docs/LOCAL_DEV.md`), a
+mobile-responsive pass on the sidebar shell, and global album/artist search (the sidebar
+"Search" item is still parked).
