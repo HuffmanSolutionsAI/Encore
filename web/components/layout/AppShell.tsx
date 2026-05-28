@@ -26,7 +26,7 @@ const PRIMARY_NAV: NavItem[] = [
   { href: "/", label: "Home", icon: Icon.Home },
   { href: "/library", label: "Library", icon: Icon.Library },
   { href: "/friends", label: "Friends", icon: Icon.Friends },
-  { href: "/search", label: "Search", icon: Icon.Search, soon: true },
+  { href: "/search", label: "Search", icon: Icon.Search },
 ];
 
 const BOTTOM_NAV: NavItem[] = [
@@ -171,14 +171,14 @@ function TopBar() {
       className="sticky top-0 z-[4] border-b border-hair flex items-center gap-4 px-10 py-5"
       style={{ background: "color-mix(in srgb, var(--e-bg) 88%, transparent)", backdropFilter: "blur(10px)" }}
     >
-      {/* Quiet search affordance — search is M-future; visually present, disabled. */}
-      <div
-        className="flex items-center gap-2.5 bg-surface border border-hair rounded-[10px] px-3.5 py-2 text-quiet max-w-[460px] flex-1"
-        title="Search is coming soon"
+      {/* Quiet search affordance — opens the album search page. */}
+      <Link
+        href="/search"
+        className="flex items-center gap-2.5 bg-surface border border-hair rounded-[10px] px-3.5 py-2 text-quiet max-w-[460px] flex-1 hover:border-brand transition"
       >
         <Icon.Search size={16} />
-        <span className="text-[13.5px]">Search albums, artists, or your friends…</span>
-      </div>
+        <span className="text-[13.5px]">Search every album…</span>
+      </Link>
       <div className="flex-1" />
       {profile && <ProfileMenu handle={profile.handle} displayName={profile.display_name} onSignOut={signOut} />}
     </div>

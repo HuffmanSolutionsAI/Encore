@@ -3,6 +3,25 @@ import { getPool } from "../lib/db";
 import { HttpError, json } from "../lib/http";
 import { requireAuth } from "../lib/auth";
 import { personalAlbumScore } from "../lib/scoring";
+import { ensureAlbumByReleaseGroup } from "../lib/catalog";
+
+/**
+ * GET /albums/resolve?mbid=<release-group mbid>
+ * Ensures a searched album is cached and returns its internal id so the
+ * client can navigate to /album/:id. Cache-first (no MusicBrainz hit on
+ * repeat).
+ */
+export async function resolveAlbum(
+  event: APIGatewayProxyEventV2WithJWTAuthorizer,
+): Promise<ReturnType<typeof json>> {
+  requireAuth(event);
+  const mbid = event.queryStringParameters?.["mbid"]?.trim();
+  if (!mbid || !/^[0-9a-f-]{36}$/i.test(mbid)) {
+    throw new HttpError(400, "invalid_mbid", "mbid must be a MusicBrainz UUID");
+  }
+  const { album } = await ensureAlbumByReleaseGroup(mbid);
+  return json(200, { id: album.id, title: album.title, artist_name: album.artist_name });
+}
 
 interface AlbumRow {
   id: string;

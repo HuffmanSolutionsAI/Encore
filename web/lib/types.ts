@@ -132,6 +132,14 @@ export interface UserSearchResult {
   is_following: boolean;
 }
 
+export interface AlbumSearchResult {
+  mbid: string;
+  title: string;
+  artist: string;
+  year: number | null;
+  primary_type: string | null;
+}
+
 export interface FeedItem {
   id: string;
   rater_id: string;

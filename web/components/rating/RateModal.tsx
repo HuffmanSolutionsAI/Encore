@@ -140,26 +140,13 @@ export function RateModal({
 
             <DoubleRule width={42} className="my-[22px]" />
 
-            {/* Big stars */}
-            <div className="flex justify-between gap-2" onMouseLeave={() => setHover(0)}>
-              {[1, 2, 3, 4, 5].map((i) => {
-                const filled = i <= display;
-                return (
-                  <button
-                    key={i}
-                    onClick={() => setValue(value === i ? null : i)}
-                    onMouseEnter={() => setHover(i)}
-                    aria-label={`${i} stars`}
-                    className="bg-transparent border-none cursor-pointer p-2 transition-transform"
-                    style={{ transform: i <= hover ? "scale(1.04)" : "scale(1)" }}
-                  >
-                    <svg width={52} height={52} viewBox="0 0 24 24" aria-hidden>
-                      <path d={STAR_PATH} fill={filled ? BRAND.brass : "var(--e-star-empty)"} />
-                    </svg>
-                  </button>
-                );
-              })}
-            </div>
+            {/* Big stars — half-step (click the left half of a star for x.5). */}
+            <BigStars
+              display={display}
+              hover={hover}
+              onHover={setHover}
+              onPick={(v) => setValue(value === v ? null : v)}
+            />
 
             <div
               className="text-center mt-2.5 font-display transition-all"
@@ -227,14 +214,68 @@ function Confirmation({ value, onClose }: { value: number | null; onClose: () =>
       </div>
       <div className="flex justify-center mt-[18px] gap-1.5">
         {[1, 2, 3, 4, 5].map((i) => (
-          <svg key={i} width={30} height={30} viewBox="0 0 24 24" aria-hidden>
-            <path d={STAR_PATH} fill={value != null && i <= value ? BRAND.brass : "var(--e-star-empty)"} />
-          </svg>
+          <FracStar key={i} index={i} value={value ?? 0} size={30} />
         ))}
       </div>
       <div className="mt-6">
         <Button variant="primary" size="lg" onClick={onClose}>Done</Button>
       </div>
+    </div>
+  );
+}
+
+/** A star filled to a fraction (0, 0.5, 1) of its width, brass over dust. */
+function FracStar({ index, value, size }: { index: number; value: number; size: number }) {
+  const fill = Math.min(Math.max(value - (index - 1), 0), 1); // 0 | 0.5 | 1
+  const gid = `frac-${index}-${Math.round(fill * 100)}-${size}`;
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
+      <defs>
+        <linearGradient id={gid}>
+          <stop offset={`${fill * 100}%`} stopColor={BRAND.brass} />
+          <stop offset={`${fill * 100}%`} stopColor="var(--e-star-empty)" />
+        </linearGradient>
+      </defs>
+      <path d={STAR_PATH} fill={`url(#${gid})`} />
+    </svg>
+  );
+}
+
+/**
+ * Interactive 5-star input with half-step support: the left half of a star
+ * picks x.5, the right half picks x.0. Hover previews the value.
+ */
+function BigStars({
+  display,
+  hover,
+  onHover,
+  onPick,
+}: {
+  display: number;
+  hover: number;
+  onHover: (v: number) => void;
+  onPick: (v: number) => void;
+}) {
+  function valueFromEvent(i: number, e: React.MouseEvent<HTMLButtonElement>): number {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const left = e.clientX - rect.left < rect.width / 2;
+    return i - (left ? 0.5 : 0);
+  }
+  return (
+    <div className="flex justify-between gap-2" onMouseLeave={() => onHover(0)}>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <button
+          key={i}
+          type="button"
+          onMouseMove={(e) => onHover(valueFromEvent(i, e))}
+          onClick={(e) => onPick(valueFromEvent(i, e))}
+          aria-label={`Rate ${i} stars (left half for ${i - 0.5})`}
+          className="bg-transparent border-none cursor-pointer p-2 transition-transform"
+          style={{ transform: i <= Math.ceil(hover) && hover > 0 ? "scale(1.04)" : "scale(1)" }}
+        >
+          <FracStar index={i} value={display} size={52} />
+        </button>
+      ))}
     </div>
   );
 }

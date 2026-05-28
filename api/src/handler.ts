@@ -7,7 +7,8 @@ import { createUser, getMe, updateMe, getProfile, searchUsers } from "./routes/u
 import { verifyLastfm } from "./routes/lastfm";
 import { nowPlaying } from "./routes/nowPlaying";
 import { listMyRatings, upsertRating } from "./routes/ratings";
-import { getAlbum } from "./routes/albums";
+import { getAlbum, resolveAlbum } from "./routes/albums";
+import { searchAlbums } from "./routes/search";
 import { follow, unfollow } from "./routes/follows";
 import { getFeed } from "./routes/feed";
 import { exportRatings } from "./routes/export";
@@ -36,6 +37,8 @@ const routes: RouteEntry[] = [
   { method: "GET",    path: "/now-playing",     handler: nowPlaying },
   { method: "POST",   path: "/ratings",         handler: upsertRating },
   { method: "GET",    path: "/ratings/me",      handler: listMyRatings },
+  { method: "GET",    path: "/search/albums",   handler: searchAlbums },
+  { method: "GET",    path: "/albums/resolve",  handler: resolveAlbum },
   { method: "GET",    path: "/albums/:id",      handler: getAlbum },
   { method: "POST",   path: "/follows",         handler: follow },
   { method: "DELETE", path: "/follows/:id",     handler: unfollow },

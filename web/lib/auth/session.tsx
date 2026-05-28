@@ -17,6 +17,7 @@ import { NowPlayingAPI } from "@/lib/api/nowPlaying";
 import { RatingsAPI } from "@/lib/api/ratings";
 import { UsersAPI } from "@/lib/api/users";
 import { ExportAPI, FeedAPI, FollowsAPI, ProfilesAPI } from "@/lib/api/social";
+import { SearchAPI } from "@/lib/api/search";
 import { remoteConfig } from "@/lib/config";
 import type { UserProfile } from "@/lib/types";
 import {
@@ -56,6 +57,7 @@ interface SessionContextValue {
   feed: FeedAPI;
   profiles: ProfilesAPI;
   exporter: ExportAPI;
+  search: SearchAPI;
   signIn: () => Promise<void>;
   signOut: () => void;
   /** Called by onboarding screens once a profile is created / updated. */
@@ -129,6 +131,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const feed = useMemo(() => new FeedAPI(api), [api]);
   const profiles = useMemo(() => new ProfilesAPI(api), [api]);
   const exporter = useMemo(() => new ExportAPI(api), [api]);
+  const search = useMemo(() => new SearchAPI(api), [api]);
 
   const advanceWithProfile = useCallback((profile: UserProfile) => {
     if (!profile.lastfm_username) {
@@ -265,6 +268,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       feed,
       profiles,
       exporter,
+      search,
       signIn,
       signOut,
       setProfile,
@@ -284,6 +288,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       feed,
       profiles,
       exporter,
+      search,
       signIn,
       signOut,
       setProfile,

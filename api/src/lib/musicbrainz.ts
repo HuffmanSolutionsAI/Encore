@@ -255,3 +255,41 @@ export async function searchReleaseGroup(input: {
   );
   return result["release-groups"]?.[0]?.id ?? null;
 }
+
+export interface AlbumSearchHit {
+  mbid: string;
+  title: string;
+  artist: string;
+  year: number | null;
+  primary_type: string | null;
+}
+
+/**
+ * Free-text album search against MusicBrainz release groups. Prefers
+ * Albums/EPs, drops obvious noise, returns up to `limit` hits.
+ */
+export async function searchReleaseGroups(q: string, limit = 16): Promise<AlbumSearchHit[]> {
+  const escaped = q.replace(/[+\-&|!(){}\[\]^"~*?:\\\/]/g, " ").trim();
+  if (!escaped) return [];
+  const result = await mbFetch<{
+    "release-groups"?: Array<{
+      id: string;
+      title: string;
+      "first-release-date"?: string;
+      "primary-type"?: string;
+      "artist-credit"?: MBArtistCredit[];
+    }>;
+  }>("/release-group", { query: escaped, limit: String(limit) });
+
+  const groups = result["release-groups"] ?? [];
+  return groups
+    .map((g) => ({
+      mbid: g.id,
+      title: g.title,
+      artist: joinArtists(g["artist-credit"]) ?? "Unknown artist",
+      year: yearFromDate(g["first-release-date"]),
+      primary_type: g["primary-type"] ?? null,
+    }))
+    // Keep records people actually rate; drop singles/broadcasts/etc.
+    .filter((g) => !g.primary_type || ["Album", "EP"].includes(g.primary_type));
+}
