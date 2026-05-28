@@ -117,6 +117,39 @@ export async function getAlbum(
     albumTrackCount: albumRow.track_count,
   });
 
+  // How the caller's friends (followed users) rated this album — their direct
+  // album score if they gave one, else the average of their track ratings on it.
+  const friendsRes = await pool.query<{
+    handle: string;
+    display_name: string;
+    score: string | null;
+  }>(
+    `select u.handle, u.display_name,
+       coalesce(
+         (select r.score from ratings r
+            where r.user_id = u.id and r.subject_type = 'album' and r.subject_id = $2),
+         (select avg(r.score) from ratings r
+            join tracks t on t.id = r.subject_id
+            where r.user_id = u.id and r.subject_type = 'track'
+              and t.album_id = $2 and r.score is not null)
+       ) as score
+     from users u
+     join follows f on f.followee_id = u.id and f.follower_id = $1
+     where exists (select 1 from ratings r
+                     where r.user_id = u.id and r.subject_type = 'album' and r.subject_id = $2)
+        or exists (select 1 from ratings r
+                     join tracks t on t.id = r.subject_id
+                     where r.user_id = u.id and r.subject_type = 'track' and t.album_id = $2)
+     order by score desc nulls last
+     limit 12`,
+    [userId, id],
+  );
+  const friends = friendsRes.rows.map((f) => ({
+    handle: f.handle,
+    display_name: f.display_name,
+    score: num(f.score),
+  }));
+
   return json(200, {
     album: albumRow,
     tracks: tracksRes.rows.map((t) => ({
@@ -137,6 +170,7 @@ export async function getAlbum(
     },
     highlights,
     skips,
+    friends,
     personal: {
       score: personal.score,
       rated_tracks: personal.ratedTracks,

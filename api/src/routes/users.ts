@@ -95,6 +95,82 @@ export async function createUser(
   }
 }
 
+interface PublicProfileRow {
+  id: string;
+  handle: string;
+  display_name: string;
+  avatar_url: string | null;
+  created_at: string;
+  records: string;
+  ovations: string;
+  followers: string;
+  following: string;
+  is_following: boolean;
+}
+
+/** GET /users/:handle — public profile + stats, with the caller's follow state. */
+export async function getProfile(
+  event: APIGatewayProxyEventV2WithJWTAuthorizer,
+): Promise<ReturnType<typeof json>> {
+  const { userId } = requireAuth(event);
+  const handle = event.pathParameters?.["handle"]?.trim().toLowerCase();
+  if (!handle || !HANDLE_RE.test(handle)) {
+    throw new HttpError(400, "invalid_handle", "handle is not valid");
+  }
+
+  const pool = await getPool();
+  const { rows } = await pool.query<PublicProfileRow>(
+    `select u.id, u.handle, u.display_name, u.avatar_url, u.created_at,
+            (select count(*) from ratings r where r.user_id = u.id)                          as records,
+            (select count(*) from ratings r where r.user_id = u.id and r.score = 5)          as ovations,
+            (select count(*) from follows f where f.followee_id = u.id)                       as followers,
+            (select count(*) from follows f where f.follower_id = u.id)                       as following,
+            exists(select 1 from follows f where f.follower_id = $2 and f.followee_id = u.id) as is_following
+     from users u
+     where u.handle = $1`,
+    [handle, userId],
+  );
+  const p = rows[0];
+  if (!p) throw new HttpError(404, "user_not_found", "No user with that handle");
+
+  return json(200, {
+    id: p.id,
+    handle: p.handle,
+    display_name: p.display_name,
+    avatar_url: p.avatar_url,
+    created_at: p.created_at,
+    is_following: p.is_following,
+    is_self: p.id === userId,
+    stats: {
+      records: Number(p.records),
+      ovations: Number(p.ovations),
+      followers: Number(p.followers),
+      following: Number(p.following),
+    },
+  });
+}
+
+/** GET /users?q=... — find people by handle or display name. */
+export async function searchUsers(
+  event: APIGatewayProxyEventV2WithJWTAuthorizer,
+): Promise<ReturnType<typeof json>> {
+  const { userId } = requireAuth(event);
+  const q = event.queryStringParameters?.["q"]?.trim();
+  if (!q || q.length < 2) return json(200, { users: [] });
+
+  const pool = await getPool();
+  const { rows } = await pool.query(
+    `select u.id, u.handle, u.display_name, u.avatar_url,
+            exists(select 1 from follows f where f.follower_id = $2 and f.followee_id = u.id) as is_following
+     from users u
+     where u.id <> $2 and (u.handle ilike $1 or u.display_name ilike $1)
+     order by u.handle asc
+     limit 12`,
+    [`%${q}%`, userId],
+  );
+  return json(200, { users: rows });
+}
+
 /** PATCH /users/me — update mutable profile fields (e.g. the Last.fm username). */
 export async function updateMe(
   event: APIGatewayProxyEventV2WithJWTAuthorizer,
