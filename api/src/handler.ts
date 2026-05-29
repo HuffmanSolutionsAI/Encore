@@ -3,7 +3,7 @@ import type {
   APIGatewayProxyResultV2,
 } from "aws-lambda";
 import { HttpError, json } from "./lib/http";
-import { createUser, getMe, updateMe, getProfile, searchUsers } from "./routes/users";
+import { createUser, deleteMe, getMe, updateMe, getProfile, searchUsers } from "./routes/users";
 import { verifyLastfm } from "./routes/lastfm";
 import { nowPlaying } from "./routes/nowPlaying";
 import { listMyRatings, upsertRating } from "./routes/ratings";
@@ -12,6 +12,9 @@ import { searchAlbums } from "./routes/search";
 import { follow, unfollow } from "./routes/follows";
 import { getFeed } from "./routes/feed";
 import { exportRatings } from "./routes/export";
+import { listHistory, syncHistory } from "./routes/history";
+import { getRecommendations } from "./routes/recommendations";
+import { listNotifications, markRead } from "./routes/notifications";
 
 type Route = (
   event: APIGatewayProxyEventV2WithJWTAuthorizer,
@@ -30,6 +33,7 @@ const routes: RouteEntry[] = [
   { method: "GET",   path: "/health",          handler: async () => json(200, { status: "ok", service: "encore-api" }) },
   { method: "GET",    path: "/users/me",        handler: getMe },
   { method: "PATCH",  path: "/users/me",        handler: updateMe },
+  { method: "DELETE", path: "/users/me",        handler: deleteMe },
   { method: "GET",    path: "/users/:handle",   handler: getProfile },
   { method: "GET",    path: "/users",           handler: searchUsers },
   { method: "POST",   path: "/users",           handler: createUser },
@@ -44,6 +48,11 @@ const routes: RouteEntry[] = [
   { method: "DELETE", path: "/follows/:id",     handler: unfollow },
   { method: "GET",    path: "/feed",            handler: getFeed },
   { method: "GET",    path: "/export",          handler: exportRatings },
+  { method: "GET",    path: "/me/history",      handler: listHistory },
+  { method: "POST",   path: "/me/history/sync", handler: syncHistory },
+  { method: "GET",    path: "/recommendations", handler: getRecommendations },
+  { method: "GET",    path: "/notifications",   handler: listNotifications },
+  { method: "POST",   path: "/notifications/mark-read", handler: markRead },
 ];
 
 /** Match `actual` (e.g. `/albums/abc-123`) against `pattern` (`/albums/:id`). */

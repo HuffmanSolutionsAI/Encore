@@ -169,6 +169,43 @@ export async function getAlbum(
     score: num(f.score),
   }));
 
+  // Album reviews: everyone's review_text on the album OR any track on it,
+  // surfacing follows first, then everyone else. Self is excluded — the
+  // user's own review is in the personal slot.
+  const reviewsRes = await pool.query<{
+    handle: string;
+    display_name: string;
+    subject_kind: string;
+    score: string | null;
+    review_text: string;
+    updated_at: string;
+    is_friend: boolean;
+  }>(
+    `select u.handle, u.display_name,
+            case when r.subject_type = 'album' then 'album' else 'track' end as subject_kind,
+            r.score, r.review_text, r.updated_at,
+            exists(select 1 from follows f where f.follower_id = $1 and f.followee_id = u.id) as is_friend
+     from ratings r
+     join users u on u.id = r.user_id
+     left join tracks t on t.id = r.subject_id
+     where r.review_text is not null
+       and r.user_id <> $1
+       and ((r.subject_type = 'album' and r.subject_id = $2)
+         or (r.subject_type = 'track' and t.album_id = $2))
+     order by is_friend desc, r.updated_at desc
+     limit 24`,
+    [userId, id],
+  );
+  const reviews = reviewsRes.rows.map((r) => ({
+    handle: r.handle,
+    display_name: r.display_name,
+    subject_kind: r.subject_kind,
+    score: num(r.score),
+    review_text: r.review_text,
+    updated_at: r.updated_at,
+    is_friend: r.is_friend,
+  }));
+
   return json(200, {
     album: albumRow,
     tracks: tracksRes.rows.map((t) => ({
@@ -190,6 +227,7 @@ export async function getAlbum(
     highlights,
     skips,
     friends,
+    reviews,
     personal: {
       score: personal.score,
       rated_tracks: personal.ratedTracks,

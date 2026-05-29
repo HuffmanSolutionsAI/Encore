@@ -1,4 +1,5 @@
 import { HttpError } from "./http";
+import { albumImageURL } from "./lastfm";
 
 // Build spec Section 9: "Set a descriptive User-Agent (required)." The
 // version travels in the UA so MusicBrainz can throttle us specifically if
@@ -184,7 +185,15 @@ export async function resolveAlbumByReleaseGroup(rgMBID: string): Promise<Resolv
     }
   }
 
-  const artworkURL = await coverArtURL(rg.id);
+  // Cover Art Archive returns 404 on a meaningful fraction of titles. Fall
+  // back to Last.fm's album.getInfo, which usually has *something*.
+  let artworkURL = await coverArtURL(rg.id);
+  if (!artworkURL) {
+    const artistName = joinArtists(rg["artist-credit"]);
+    if (artistName) {
+      artworkURL = await albumImageURL(artistName, rg.title).catch(() => null);
+    }
+  }
 
   return {
     releaseGroupMBID: rg.id,

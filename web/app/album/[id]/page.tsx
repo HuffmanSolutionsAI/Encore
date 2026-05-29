@@ -101,6 +101,7 @@ function AlbumContent({ id }: { id: string }) {
               <Highlights detail={state.detail} />
             </div>
           </div>
+          <Reviews detail={state.detail} />
         </>
       )}
     </>
@@ -261,6 +262,41 @@ function Friends({ detail }: { detail: AlbumDetail }) {
 }
 
 // ─────────────────────────── highlights & skips ───────────────────────────
+
+// ─────────────────────────── reviews ───────────────────────────
+
+function Reviews({ detail }: { detail: AlbumDetail }) {
+  if (detail.reviews.length === 0) return null;
+  return (
+    <section className="mt-12">
+      <SectionHeader title="What people wrote" subtitle="Friends first, then everyone else." />
+      <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+        {detail.reviews.map((r, i) => (
+          <Card key={`${r.handle}-${i}`} padding={20}>
+            <div className="flex items-baseline gap-2 mb-3">
+              <Link href={`/u/${r.handle}`} className="t-label hover:underline">
+                {r.display_name}
+              </Link>
+              <span className="t-caption">@{r.handle}</span>
+              {r.is_friend && <span className="t-caption text-brand">· friend</span>}
+              {r.score != null && (
+                <span className="ml-auto">
+                  <Score value={r.score} size={18} />
+                </span>
+              )}
+            </div>
+            <p className="t-editorial" style={{ fontSize: 16 }}>
+              “{r.review_text}”
+            </p>
+            {r.subject_kind === "track" && (
+              <p className="t-caption mt-3">— on a track from this album</p>
+            )}
+          </Card>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 function Highlights({ detail }: { detail: AlbumDetail }) {
   if (detail.highlights.length === 0 && detail.skips.length === 0) {

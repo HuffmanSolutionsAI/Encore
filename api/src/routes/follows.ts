@@ -27,10 +27,18 @@ export async function follow(
   }
 
   try {
-    await pool.query(
+    const ins = await pool.query(
       "insert into follows (follower_id, followee_id) values ($1, $2) on conflict do nothing",
       [userId, target.id],
     );
+    // Only notify on the new edge — `on conflict` returns 0 affected rows on
+    // re-follow, so this stays quiet.
+    if ((ins.rowCount ?? 0) > 0) {
+      await pool.query(
+        "insert into notifications (user_id, kind, actor_id) values ($1, 'follow', $2)",
+        [target.id, userId],
+      );
+    }
   } catch (err) {
     if (!isUniqueViolation(err)) throw err;
   }

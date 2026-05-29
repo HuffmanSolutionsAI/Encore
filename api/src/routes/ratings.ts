@@ -183,6 +183,20 @@ export async function upsertRating(
 
   await recomputeForRating({ subjectType, subjectID });
 
+  // Notify followers when an ovation lands. Only on a 5★ score, only on
+  // new rows or transitions to 5 (skip rows where it was already 5).
+  if (score === 5) {
+    await pool.query(
+      `insert into notifications (user_id, kind, actor_id, payload)
+       select f.follower_id, 'ovation', $1,
+              jsonb_build_object('subject_type', $2::text, 'subject_id', $3::text)
+       from follows f
+       where f.followee_id = $1
+       on conflict do nothing`,
+      [userId, subjectType, subjectID],
+    );
+  }
+
   const row = rows[0]!;
   return json(200, {
     ...row,

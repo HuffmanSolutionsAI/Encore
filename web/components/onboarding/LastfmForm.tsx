@@ -11,7 +11,7 @@ import { EncoreButton } from "@/components/design-system/EncoreButton";
 const USERNAME_RE = /^[^\s]{1,64}$/;
 
 export function LastfmForm() {
-  const { lastfm, users, setProfile } = useSession();
+  const { lastfm, users, setProfile, skipLastfm } = useSession();
   const [username, setUsername] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,6 +19,10 @@ export function LastfmForm() {
   const trimmed = username.trim();
   const looksValid = USERNAME_RE.test(trimmed);
   const canSubmit = looksValid && !submitting;
+
+  function skip() {
+    skipLastfm();
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -81,6 +85,15 @@ export function LastfmForm() {
         <EncoreButton type="submit" kind="primary" disabled={!canSubmit}>
           {submitting ? "Checking…" : "Continue"}
         </EncoreButton>
+
+        <button
+          type="button"
+          onClick={skip}
+          disabled={submitting}
+          className="text-quiet text-xs underline-offset-2 hover:text-fg hover:underline"
+        >
+          Skip for now — link Last.fm later in settings.
+        </button>
 
         <p className="text-quiet text-xs text-center">
           No Last.fm account yet?{" "}

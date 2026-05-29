@@ -7,8 +7,50 @@ export interface UserProfile {
   handle: string;
   display_name: string;
   avatar_url: string | null;
+  bio: string | null;
   lastfm_username: string | null;
   created_at: string;
+}
+
+export interface HistoryItem {
+  played_at: string;
+  track_title: string;
+  artist_name: string;
+  track_mbid: string | null;
+  rated: boolean;
+  score: number | null;
+}
+
+export interface Recommendation {
+  album_id: string;
+  album_title: string;
+  album_artist: string;
+  album_artwork_url: string | null;
+  friend_count: number;
+  best_score: number;
+  top_friend: { handle: string; display_name: string };
+}
+
+export interface AlbumReview {
+  handle: string;
+  display_name: string;
+  subject_kind: "track" | "album";
+  score: number | null;
+  review_text: string;
+  updated_at: string;
+  is_friend: boolean;
+}
+
+export type NotificationKind = "follow" | "ovation";
+export interface NotificationItem {
+  id: string;
+  kind: NotificationKind;
+  actor_id: string | null;
+  actor_handle: string | null;
+  actor_display_name: string | null;
+  payload: { subject_type?: "track" | "album"; subject_id?: string } & Record<string, unknown>;
+  created_at: string;
+  read_at: string | null;
 }
 
 export interface NowPlayingTrack {
@@ -102,6 +144,7 @@ export interface AlbumDetail {
   highlights: AlbumHighlight[];
   skips: AlbumHighlight[];
   friends: AlbumFriend[];
+  reviews: AlbumReview[];
   personal: {
     score: number | null;
     rated_tracks: number;
@@ -118,6 +161,7 @@ export interface PublicProfile {
   handle: string;
   display_name: string;
   avatar_url: string | null;
+  bio: string | null;
   created_at: string;
   is_following: boolean;
   is_self: boolean;

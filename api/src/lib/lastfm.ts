@@ -148,3 +148,93 @@ export async function getNowPlaying(username: string): Promise<NowPlayingTrack |
   const live = tracks.find((t) => t["@attr"]?.nowplaying === "true");
   return live ? normaliseTrack(live) : null;
 }
+
+/**
+ * Pull a page of a user's scrobble history. Used by the history backfill —
+ * Last.fm returns up to 200 tracks per page, newest first.
+ */
+export interface LastfmScrobble {
+  title: string;
+  artist: string;
+  album: string | null;
+  trackMBID: string | null;
+  playedAt: Date;
+}
+
+export async function getRecentTracksPage(input: {
+  username: string;
+  page: number;
+  limit?: number;
+  from?: Date;
+}): Promise<{ tracks: LastfmScrobble[]; totalPages: number }> {
+  const params: Record<string, string> = {
+    method: "user.getrecenttracks",
+    user: input.username,
+    page: String(input.page),
+    limit: String(input.limit ?? 200),
+  };
+  if (input.from) params["from"] = String(Math.floor(input.from.getTime() / 1000));
+
+  const data = await callLastfm<{
+    recenttracks?: {
+      track?: LastfmTrack | LastfmTrack[];
+      "@attr"?: { totalPages?: string };
+    };
+    error?: number;
+    message?: string;
+  }>(params);
+
+  if (data.error === ERROR_NO_USER) {
+    throw new HttpError(404, "lastfm_user_not_found", "Last.fm user not found");
+  }
+  if (data.error) {
+    throw new HttpError(503, "lastfm_error", data.message ?? "Last.fm error");
+  }
+
+  const raw = data.recenttracks?.track;
+  const list = raw ? (Array.isArray(raw) ? raw : [raw]) : [];
+
+  const tracks: LastfmScrobble[] = [];
+  for (const t of list) {
+    // Skip the now-playing entry (no timestamp).
+    if (t["@attr"]?.nowplaying === "true") continue;
+    const title = nonEmpty(t.name);
+    const artist = typeof t.artist === "string" ? nonEmpty(t.artist) : nonEmpty(t.artist?.["#text"]);
+    if (!title || !artist) continue;
+    const uts = (t as unknown as { date?: { uts?: string } }).date?.uts;
+    const playedAt = uts ? new Date(Number(uts) * 1000) : null;
+    if (!playedAt) continue;
+    tracks.push({
+      title,
+      artist,
+      album: typeof t.album === "object" ? nonEmpty(t.album?.["#text"]) : null,
+      trackMBID: nonEmpty(t.mbid),
+      playedAt,
+    });
+  }
+  const totalPages = Number(data.recenttracks?.["@attr"]?.totalPages ?? "1") || 1;
+  return { tracks, totalPages };
+}
+
+/**
+ * Best-effort album cover URL via Last.fm — used as a fallback when the
+ * Cover Art Archive doesn't have a release-group cover. Free, no auth
+ * beyond the API key. Returns null on miss.
+ */
+export async function albumImageURL(artist: string, album: string): Promise<string | null> {
+  try {
+    const data = await callLastfm<{
+      album?: {
+        image?: Array<{ "#text"?: string; size?: string }>;
+      };
+    }>({ method: "album.getinfo", artist, album });
+    const order = ["extralarge", "large", "medium"];
+    for (const size of order) {
+      const hit = data.album?.image?.find((i) => i.size === size && i["#text"]);
+      if (hit?.["#text"]) return hit["#text"]!;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}

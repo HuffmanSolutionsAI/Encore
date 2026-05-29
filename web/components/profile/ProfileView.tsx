@@ -31,10 +31,15 @@ export function ProfileView({
     <>
       {/* Identity strip */}
       <div className="grid grid-cols-[auto_1fr_auto] gap-7 items-center pb-9 border-b border-hair">
-        <Avatar name={profile.display_name} size={96} />
+        <Avatar name={profile.display_name} url={profile.avatar_url} size={96} />
         <div>
           <Overline>@{profile.handle}</Overline>
           <h1 className="t-h1 mt-2">{profile.display_name}</h1>
+          {profile.bio && (
+            <p className="t-editorial mt-3" style={{ fontSize: 16, maxWidth: 520 }}>
+              {profile.bio}
+            </p>
+          )}
           <div className="t-caption mt-2.5">
             On Encore since {joined} · {profile.stats.followers} followers · {profile.stats.following} following
           </div>

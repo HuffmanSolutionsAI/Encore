@@ -10,8 +10,37 @@ interface UserRow {
   handle: string;
   display_name: string;
   avatar_url: string | null;
+  bio: string | null;
   lastfm_username: string | null;
   created_at: string;
+}
+
+const USER_RETURNING =
+  "id, handle, display_name, avatar_url, bio, lastfm_username, created_at";
+
+function requireBio(value: unknown): string | null {
+  if (value === null) return null;
+  if (typeof value !== "string") {
+    throw new HttpError(400, "invalid_bio", "bio must be a string or null");
+  }
+  const t = value.trim();
+  if (t.length === 0) return null;
+  if (t.length > 280) throw new HttpError(400, "invalid_bio", "bio is too long (max 280 chars)");
+  return t;
+}
+
+function requireAvatarURL(value: unknown): string | null {
+  if (value === null) return null;
+  if (typeof value !== "string") {
+    throw new HttpError(400, "invalid_avatar_url", "avatar_url must be a string or null");
+  }
+  const t = value.trim();
+  if (t.length === 0) return null;
+  if (!/^https?:\/\//.test(t)) {
+    throw new HttpError(400, "invalid_avatar_url", "avatar_url must be http(s)");
+  }
+  if (t.length > 500) throw new HttpError(400, "invalid_avatar_url", "avatar_url is too long");
+  return t;
 }
 
 function requireHandle(value: unknown): string {
@@ -58,7 +87,7 @@ export async function getMe(
   const { userId } = requireAuth(event);
   const pool = await getPool();
   const { rows } = await pool.query<UserRow>(
-    "select id, handle, display_name, avatar_url, lastfm_username, created_at from users where id = $1",
+    "select id, handle, display_name, avatar_url, bio, lastfm_username, created_at from users where id = $1",
     [userId],
   );
   const profile = rows[0];
@@ -80,7 +109,7 @@ export async function createUser(
     const { rows } = await pool.query<UserRow>(
       `insert into users (id, handle, display_name)
        values ($1, $2, $3)
-       returning id, handle, display_name, avatar_url, lastfm_username, created_at`,
+       returning id, handle, display_name, avatar_url, bio, lastfm_username, created_at`,
       [userId, handle, displayName],
     );
     return json(201, rows[0]);
@@ -100,6 +129,7 @@ interface PublicProfileRow {
   handle: string;
   display_name: string;
   avatar_url: string | null;
+  bio: string | null;
   created_at: string;
   records: string;
   ovations: string;
@@ -120,7 +150,7 @@ export async function getProfile(
 
   const pool = await getPool();
   const { rows } = await pool.query<PublicProfileRow>(
-    `select u.id, u.handle, u.display_name, u.avatar_url, u.created_at,
+    `select u.id, u.handle, u.display_name, u.avatar_url, u.bio, u.created_at,
             (select count(*) from ratings r where r.user_id = u.id)                          as records,
             (select count(*) from ratings r where r.user_id = u.id and r.score = 5)          as ovations,
             (select count(*) from follows f where f.followee_id = u.id)                       as followers,
@@ -138,6 +168,7 @@ export async function getProfile(
     handle: p.handle,
     display_name: p.display_name,
     avatar_url: p.avatar_url,
+    bio: p.bio,
     created_at: p.created_at,
     is_following: p.is_following,
     is_self: p.id === userId,
@@ -190,6 +221,8 @@ export async function updateMe(
     const raw = body["lastfm_username"];
     set("lastfm_username", raw === null ? null : requireLastfmUsername(raw));
   }
+  if ("bio" in body) set("bio", requireBio(body["bio"]));
+  if ("avatar_url" in body) set("avatar_url", requireAvatarURL(body["avatar_url"]));
   if (columns.length === 0) {
     throw new HttpError(400, "no_fields", "No updatable fields supplied");
   }
@@ -199,10 +232,25 @@ export async function updateMe(
   const { rows } = await pool.query<UserRow>(
     `update users set ${columns.join(", ")}
      where id = $${values.length}
-     returning id, handle, display_name, avatar_url, lastfm_username, created_at`,
+     returning id, handle, display_name, avatar_url, bio, lastfm_username, created_at`,
     values,
   );
   const profile = rows[0];
   if (!profile) throw new HttpError(404, "profile_not_found", "No profile for this account");
   return json(200, profile);
+}
+
+/**
+ * DELETE /users/me — irreversible. Cascades via the existing FKs delete
+ * ratings, follows, listen_events, and notifications. The Cognito record
+ * isn't touched (we don't own it); the user can re-onboard with the same
+ * Apple ID and get a fresh profile.
+ */
+export async function deleteMe(
+  event: APIGatewayProxyEventV2WithJWTAuthorizer,
+): Promise<ReturnType<typeof json>> {
+  const { userId } = requireAuth(event);
+  const pool = await getPool();
+  await pool.query("delete from users where id = $1", [userId]);
+  return json(200, { deleted: true });
 }

@@ -61,7 +61,7 @@ function SettingsContent({ profile }: { profile: UserProfile }) {
           {tab === "account" && <AccountPane profile={profile} />}
           {tab === "appearance" && <AppearancePane />}
           {tab === "connected" && <ConnectedPane profile={profile} />}
-          {tab === "data" && <DataPane />}
+          {tab === "data" && <DataPane handle={profile.handle} />}
         </div>
       </div>
     </>
@@ -73,10 +73,42 @@ function SettingsContent({ profile }: { profile: UserProfile }) {
 function AccountPane({ profile }: { profile: UserProfile }) {
   const { users, lastfm, setProfile } = useSession();
   const [displayName, setDisplayName] = useState(profile.display_name);
+  const [bio, setBio] = useState(profile.bio ?? "");
+  const [avatarURL, setAvatarURL] = useState(profile.avatar_url ?? "");
   const [lastfmName, setLastfmName] = useState(profile.lastfm_username ?? "");
   const [savingName, setSavingName] = useState(false);
+  const [savingBio, setSavingBio] = useState(false);
+  const [savingAvatar, setSavingAvatar] = useState(false);
   const [savingLastfm, setSavingLastfm] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+
+  async function saveBio() {
+    setSavingBio(true);
+    setNote(null);
+    try {
+      const updated = await users.update({ bio: bio.trim() || null });
+      setProfile(updated);
+      setNote("Bio saved.");
+    } catch (e) {
+      setNote(e instanceof APIError ? e.message ?? "Couldn't save." : "Couldn't save.");
+    } finally {
+      setSavingBio(false);
+    }
+  }
+
+  async function saveAvatar() {
+    setSavingAvatar(true);
+    setNote(null);
+    try {
+      const updated = await users.update({ avatarURL: avatarURL.trim() || null });
+      setProfile(updated);
+      setNote("Avatar saved.");
+    } catch (e) {
+      setNote(e instanceof APIError ? e.message ?? "Couldn't save." : "Couldn't save.");
+    } finally {
+      setSavingAvatar(false);
+    }
+  }
 
   async function saveName() {
     setSavingName(true);
@@ -132,6 +164,35 @@ function AccountPane({ profile }: { profile: UserProfile }) {
       </Row>
       <Row title="Handle" subtitle="Your unique name for share links.">
         <span className="t-label">@{profile.handle}</span>
+      </Row>
+      <Row title="Bio" subtitle="One sentence on what you're listening to. 280 chars max.">
+        <div className="flex gap-2 items-start">
+          <textarea
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            maxLength={280}
+            rows={2}
+            placeholder="Late-night listener…"
+            className="bg-surface text-fg border border-hair rounded-card px-3 py-2 w-64 outline-none focus:border-brass resize-y"
+          />
+          <Button variant="ghost" size="sm" onClick={saveBio} disabled={savingBio}>
+            {savingBio ? "Saving…" : "Save"}
+          </Button>
+        </div>
+      </Row>
+      <Row title="Avatar URL" subtitle="A link to a square image. Upload-to-Encore comes later.">
+        <div className="flex gap-2">
+          <input
+            value={avatarURL}
+            onChange={(e) => setAvatarURL(e.target.value)}
+            maxLength={500}
+            placeholder="https://…"
+            className="bg-surface text-fg border border-hair rounded-card px-3 py-2 w-64 outline-none focus:border-brass"
+          />
+          <Button variant="ghost" size="sm" onClick={saveAvatar} disabled={savingAvatar}>
+            {savingAvatar ? "Saving…" : "Save"}
+          </Button>
+        </div>
       </Row>
       <Row title="Last.fm username" subtitle="Where Encore reads what you're playing.">
         <div className="flex gap-2">
@@ -193,10 +254,14 @@ function ConnectedPane({ profile }: { profile: UserProfile }) {
   );
 }
 
-function DataPane() {
-  const { exporter, signOut } = useSession();
+function DataPane({ handle }: { handle: string }) {
+  const { exporter, users, signOut } = useSession();
   const [busy, setBusy] = useState<"csv" | "json" | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [typedHandle, setTypedHandle] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteErr, setDeleteErr] = useState<string | null>(null);
 
   async function download(format: "csv" | "json") {
     setBusy(format);
@@ -207,6 +272,19 @@ function DataPane() {
       setErr(e instanceof Error ? e.message : "Couldn't export. Try again shortly.");
     } finally {
       setBusy(null);
+    }
+  }
+
+  async function deleteAccount(expectedHandle: string) {
+    setDeleting(true);
+    setDeleteErr(null);
+    try {
+      await users.deleteAccount();
+      // Sign out wipes tokens/dev id and routes to /auth/signed-out.
+      signOut();
+    } catch (e) {
+      setDeleting(false);
+      setDeleteErr(e instanceof Error ? e.message : "Couldn't delete the account.");
     }
   }
 
@@ -232,6 +310,46 @@ function DataPane() {
           <Button variant="ghost" size="sm" icon={<Icon.Logout size={14} />} onClick={signOut}>
             Sign out
           </Button>
+        </Row>
+      </Section>
+
+      <Section title="Danger zone">
+        <Row
+          title="Delete account"
+          subtitle="Removes your profile, ratings, follows, and listen history. Cannot be undone."
+        >
+          {!confirming ? (
+            <Button variant="ghost" size="sm" onClick={() => setConfirming(true)}>
+              Delete account
+            </Button>
+          ) : (
+            <div className="flex flex-col gap-2.5 items-end">
+              <p className="t-caption">
+                Type <strong className="text-fg">@{handle}</strong> to confirm.
+              </p>
+              <input
+                value={typedHandle}
+                onChange={(e) => setTypedHandle(e.target.value.replace(/^@/, ""))}
+                placeholder={`@${handle}`}
+                className="bg-surface text-fg border border-hair rounded-card px-3 py-2 w-56 outline-none focus:border-brass"
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" onClick={() => { setConfirming(false); setTypedHandle(""); setDeleteErr(null); }} disabled={deleting}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => deleteAccount(handle)}
+                  disabled={deleting || typedHandle.trim().toLowerCase() !== handle}
+                >
+                  {deleting ? "Deleting…" : "Delete forever"}
+                </Button>
+              </div>
+              {deleteErr && <p className="t-caption">{deleteErr}</p>}
+            </div>
+          )}
         </Row>
       </Section>
     </>

@@ -6,6 +6,8 @@ import { useSession } from "@/lib/auth/session";
 import { useLibrary } from "@/lib/hooks/useLibrary";
 import { AppShell } from "@/components/layout/AppShell";
 import { HomeHero } from "@/components/home/HomeHero";
+import { RecentlyPlayed } from "@/components/home/RecentlyPlayed";
+import { Recommendations } from "@/components/home/Recommendations";
 import { RecentlyRated } from "@/components/now-playing/RecentlyRated";
 import { Wordmark } from "@/components/design-system/Wordmark";
 import { DoubleRule } from "@/components/design-system/DoubleRule";
@@ -41,6 +43,8 @@ function HomeContent() {
   return (
     <>
       <HomeHero recordCount={recordCount} ovationCount={ovationCount} />
+      <RecentlyPlayed />
+      <Recommendations />
       <RecentlyRated entries={entries} onOpenLibrary={() => router.push("/library")} />
     </>
   );

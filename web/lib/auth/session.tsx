@@ -18,6 +18,7 @@ import { RatingsAPI } from "@/lib/api/ratings";
 import { UsersAPI } from "@/lib/api/users";
 import { ExportAPI, FeedAPI, FollowsAPI, ProfilesAPI } from "@/lib/api/social";
 import { SearchAPI } from "@/lib/api/search";
+import { HistoryAPI, NotificationsAPI, RecommendationsAPI } from "@/lib/api/extras";
 import { remoteConfig } from "@/lib/config";
 import type { UserProfile } from "@/lib/types";
 import {
@@ -32,6 +33,7 @@ import { clearDevUserID, createDevUserID, loadDevUserID } from "./dev";
 import { clearTokens, isExpired, loadTokens, saveTokens } from "./tokens";
 
 const SPOTIFY_STEP_KEY = "encore.onboarding.spotify_done";
+const LASTFM_SKIP_KEY = "encore.onboarding.lastfm_skipped";
 
 /**
  * Stage of the onboarding flow when the user is signed in but hasn't
@@ -58,12 +60,16 @@ interface SessionContextValue {
   profiles: ProfilesAPI;
   exporter: ExportAPI;
   search: SearchAPI;
+  history: HistoryAPI;
+  recommendations: RecommendationsAPI;
+  notifications: NotificationsAPI;
   signIn: () => Promise<void>;
   signOut: () => void;
   /** Called by onboarding screens once a profile is created / updated. */
   setProfile: (profile: UserProfile) => void;
   /** Called when the user confirms they've finished the Spotify step. */
   completeSpotifyStep: () => void;
+  skipLastfm: () => void;
   /** Called by /auth/callback after exchanging the code for tokens. */
   hydrateAfterCallback: () => Promise<string>;
   /** True when running with NEXT_PUBLIC_DEV_MODE=true. */
@@ -132,9 +138,15 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const profiles = useMemo(() => new ProfilesAPI(api), [api]);
   const exporter = useMemo(() => new ExportAPI(api), [api]);
   const search = useMemo(() => new SearchAPI(api), [api]);
+  const history = useMemo(() => new HistoryAPI(api), [api]);
+  const recommendations = useMemo(() => new RecommendationsAPI(api), [api]);
+  const notifications = useMemo(() => new NotificationsAPI(api), [api]);
 
   const advanceWithProfile = useCallback((profile: UserProfile) => {
-    if (!profile.lastfm_username) {
+    const lastfmSkipped =
+      typeof window !== "undefined" &&
+      window.localStorage.getItem(LASTFM_SKIP_KEY) === "true";
+    if (!profile.lastfm_username && !lastfmSkipped) {
       setStatus({ kind: "onboarding", stage: "link_lastfm", profile });
       return;
     }
@@ -212,6 +224,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(() => {
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(SPOTIFY_STEP_KEY);
+      window.localStorage.removeItem(LASTFM_SKIP_KEY);
     }
     if (devMode) {
       devUserIDRef.current = null;
@@ -228,6 +241,23 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     (profile: UserProfile) => advanceWithProfile(profile),
     [advanceWithProfile],
   );
+
+  const skipLastfm = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(LASTFM_SKIP_KEY, "true");
+    }
+    setStatus((prev) => {
+      if (prev.kind === "onboarding" && prev.profile) {
+        const spotifyDone =
+          typeof window !== "undefined" &&
+          window.localStorage.getItem(SPOTIFY_STEP_KEY) === "true";
+        return spotifyDone
+          ? { kind: "ready", profile: prev.profile }
+          : { kind: "onboarding", stage: "spotify_explainer", profile: prev.profile };
+      }
+      return prev;
+    });
+  }, []);
 
   const completeSpotifyStep = useCallback(() => {
     if (typeof window !== "undefined") {
@@ -269,10 +299,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       profiles,
       exporter,
       search,
+      history,
+      recommendations,
+      notifications,
       signIn,
       signOut,
       setProfile,
       completeSpotifyStep,
+      skipLastfm,
       hydrateAfterCallback,
       devMode,
     }),
@@ -289,10 +323,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       profiles,
       exporter,
       search,
+      history,
+      recommendations,
+      notifications,
       signIn,
       signOut,
       setProfile,
       completeSpotifyStep,
+      skipLastfm,
       hydrateAfterCallback,
       devMode,
     ],

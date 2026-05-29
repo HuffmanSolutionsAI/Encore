@@ -8,6 +8,7 @@ import { useSession } from "@/lib/auth/session";
 import { NowPlayingProvider } from "@/lib/now-playing/context";
 import { RateProvider } from "@/components/rating/RateProvider";
 import { NowBar } from "@/components/layout/NowBar";
+import { NotificationsBell } from "@/components/layout/NotificationsBell";
 import { GrooveWordmark } from "@/components/design-system/GrooveWordmark";
 import { DoubleRule } from "@/components/design-system/DoubleRule";
 import { Avatar } from "@/components/design-system/Avatar";
@@ -60,22 +61,46 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <NowPlayingProvider>
       <RateProvider>
-        {/* Exactly one viewport tall, no page-level scroll — only #app-scroll
-            scrolls, so the sidebar and chrome stay fixed in place. */}
-        <div className="flex h-screen w-full overflow-hidden bg-page">
-          <Sidebar />
-          <main className="flex-1 min-w-0 min-h-0 flex flex-col relative">
-            <TopBar />
-            <div id="app-scroll" className="flex-1 overflow-y-auto min-h-0">
-              <div className="mx-auto w-full max-w-5xl px-6 sm:px-10 py-8 sm:py-12">
-                {children}
-              </div>
-            </div>
-            <NowBar />
-          </main>
-        </div>
+        <ShellChrome>{children}</ShellChrome>
       </RateProvider>
     </NowPlayingProvider>
+  );
+}
+
+function ShellChrome({ children }: { children: React.ReactNode }) {
+  const [drawer, setDrawer] = useState(false);
+  const pathname = usePathname();
+  // Auto-close the drawer when the route changes so a tap on a nav item
+  // doesn't leave a stale overlay sitting over the new page.
+  useEffect(() => setDrawer(false), [pathname]);
+
+  return (
+    <div className="flex h-screen w-full overflow-hidden bg-page">
+      {/* Desktop sidebar — hidden under md, replaced by the drawer overlay */}
+      <div className="hidden md:flex">
+        <Sidebar />
+      </div>
+
+      {/* Mobile drawer */}
+      {drawer && (
+        <div className="md:hidden fixed inset-0 z-30 flex">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setDrawer(false)} />
+          <div className="relative z-10 h-full">
+            <Sidebar />
+          </div>
+        </div>
+      )}
+
+      <main className="flex-1 min-w-0 min-h-0 flex flex-col relative">
+        <TopBar onOpenNav={() => setDrawer(true)} />
+        <div id="app-scroll" className="flex-1 overflow-y-auto min-h-0">
+          <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 md:px-10 py-6 sm:py-10">
+            {children}
+          </div>
+        </div>
+        <NowBar />
+      </main>
+    </div>
   );
 }
 
@@ -161,25 +186,58 @@ function SignOutItem() {
 
 // ─────────────────────────── Top bar ───────────────────────────
 
-function TopBar() {
+function HamburgerIcon() {
+  return (
+    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden>
+      <path d="M4 7h16M4 12h16M4 17h16" />
+    </svg>
+  );
+}
+
+function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
   const { status, signOut } = useSession();
   const profile = status.kind === "ready" ? status.profile : undefined;
 
   return (
     <div
-      className="sticky top-0 z-[4] border-b border-hair flex items-center gap-4 px-10 py-5"
+      className="sticky top-0 z-[4] border-b border-hair flex items-center gap-3 sm:gap-4 px-4 sm:px-6 md:px-10 py-4 sm:py-5"
       style={{ background: "color-mix(in srgb, var(--e-bg) 88%, transparent)", backdropFilter: "blur(10px)" }}
     >
-      {/* Quiet search affordance — opens the album search page. */}
+      {/* Mobile hamburger */}
+      <button
+        type="button"
+        onClick={onOpenNav}
+        aria-label="Open navigation"
+        className="md:hidden w-10 h-10 rounded-full bg-surface border border-hair text-fg flex items-center justify-center"
+      >
+        <HamburgerIcon />
+      </button>
+
+      {/* Search affordance — full pill on desktop, icon-only on mobile */}
       <Link
         href="/search"
-        className="flex items-center gap-2.5 bg-surface border border-hair rounded-[10px] px-3.5 py-2 text-quiet max-w-[460px] flex-1 hover:border-brand transition"
+        className="hidden sm:flex items-center gap-2.5 bg-surface border border-hair rounded-[10px] px-3.5 py-2 text-quiet max-w-[460px] flex-1 hover:border-brand transition"
       >
         <Icon.Search size={16} />
         <span className="text-[13.5px]">Search every album…</span>
       </Link>
+      <Link
+        href="/search"
+        aria-label="Search"
+        className="sm:hidden w-10 h-10 rounded-full bg-surface border border-hair text-fg flex items-center justify-center"
+      >
+        <Icon.Search size={16} />
+      </Link>
       <div className="flex-1" />
-      {profile && <ProfileMenu handle={profile.handle} displayName={profile.display_name} onSignOut={signOut} />}
+      {profile && <NotificationsBell />}
+      {profile && (
+        <ProfileMenu
+          handle={profile.handle}
+          displayName={profile.display_name}
+          avatarURL={profile.avatar_url}
+          onSignOut={signOut}
+        />
+      )}
     </div>
   );
 }
@@ -187,10 +245,12 @@ function TopBar() {
 function ProfileMenu({
   handle,
   displayName,
+  avatarURL,
   onSignOut,
 }: {
   handle: string;
   displayName: string;
+  avatarURL: string | null;
   onSignOut: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -209,7 +269,7 @@ function ProfileMenu({
   return (
     <div ref={ref} className="relative">
       <button onClick={() => setOpen((v) => !v)} aria-label="Account" aria-expanded={open} className="block rounded-full">
-        <Avatar name={displayName} size={36} />
+        <Avatar name={displayName} url={avatarURL} size={36} />
       </button>
       {open && (
         <div className="absolute right-0 top-12 w-56 bg-surface border border-hair rounded-card shadow-warm overflow-hidden z-10">
