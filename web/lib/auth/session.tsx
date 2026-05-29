@@ -29,7 +29,7 @@ import {
   startSignIn as kickoffSignIn,
   startSignOut as kickoffSignOut,
 } from "./cognito";
-import { clearDevUserID, createDevUserID, loadDevUserID } from "./dev";
+import { clearDevUserID, createDevUserID, loadDevUserID, setDevUserID } from "./dev";
 import { clearTokens, isExpired, loadTokens, saveTokens } from "./tokens";
 
 const SPOTIFY_STEP_KEY = "encore.onboarding.spotify_done";
@@ -64,6 +64,8 @@ interface SessionContextValue {
   recommendations: RecommendationsAPI;
   notifications: NotificationsAPI;
   signIn: () => Promise<void>;
+  /** Dev-mode only: sign in as an existing local user id (no new UUID). */
+  signInAs: (userId: string) => Promise<void>;
   signOut: () => void;
   /** Called by onboarding screens once a profile is created / updated. */
   setProfile: (profile: UserProfile) => void;
@@ -221,6 +223,29 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
   }, [devMode, loadProfile]);
 
+  const signInAs = useCallback(
+    async (userId: string) => {
+      if (!devMode) throw new Error("signInAs is dev-mode only");
+      try {
+        setDevUserID(userId);
+        devUserIDRef.current = userId;
+        // Resuming an account — clear onboarding skip markers from any prior
+        // session so the new account's profile drives stage selection.
+        if (typeof window !== "undefined") {
+          window.localStorage.removeItem(SPOTIFY_STEP_KEY);
+          window.localStorage.removeItem(LASTFM_SKIP_KEY);
+        }
+        await loadProfile();
+      } catch (err) {
+        setStatus({
+          kind: "signed_out",
+          error: err instanceof Error ? err.message : "Couldn't sign in to that account.",
+        });
+      }
+    },
+    [devMode, loadProfile],
+  );
+
   const signOut = useCallback(() => {
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(SPOTIFY_STEP_KEY);
@@ -303,6 +328,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       recommendations,
       notifications,
       signIn,
+      signInAs,
       signOut,
       setProfile,
       completeSpotifyStep,
@@ -327,6 +353,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       recommendations,
       notifications,
       signIn,
+      signInAs,
       signOut,
       setProfile,
       completeSpotifyStep,

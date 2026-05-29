@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useSession } from "@/lib/auth/session";
+import { listDevAccounts, type DevAccount } from "@/lib/auth/dev";
 import { isRemoteConfigured } from "@/lib/config";
 import { Button } from "@/components/design-system/Button";
 import { Overline } from "@/components/design-system/Overline";
+import { Avatar } from "@/components/design-system/Avatar";
 import { AuthFrame } from "@/components/layout/AuthFrame";
 
 export default function SignInPage() {
-  const { signIn, status, devMode } = useSession();
+  const { signIn, signInAs, status, devMode } = useSession();
   const router = useRouter();
   const configured = isRemoteConfigured();
   const errorMessage = status.kind === "signed_out" ? status.error : undefined;
@@ -29,12 +31,14 @@ export default function SignInPage() {
         Your encores have been kept safe.
       </p>
 
-      <div className="mt-8 flex flex-col gap-3">
-        {devMode ? (
-          <Button variant="primary" size="lg" className="w-full" onClick={() => void signIn()} disabled={!configured}>
-            Sign in as dev
-          </Button>
-        ) : (
+      {devMode ? (
+        <DevAccountPicker
+          configured={configured}
+          onSignInAs={signInAs}
+          onCreateNew={signIn}
+        />
+      ) : (
+        <div className="mt-8 flex flex-col gap-3">
           <Button
             variant="primary"
             size="lg"
@@ -45,9 +49,10 @@ export default function SignInPage() {
           >
             Continue with Apple
           </Button>
-        )}
-        {errorMessage && <p className="t-small text-center">{errorMessage}</p>}
-      </div>
+        </div>
+      )}
+
+      {errorMessage && <p className="t-small text-center mt-3">{errorMessage}</p>}
 
       {!configured && (
         <div className="mt-6 border border-hair rounded-card bg-surface p-4 text-sm text-muted space-y-2">
@@ -68,6 +73,78 @@ export default function SignInPage() {
         </div>
       )}
     </AuthFrame>
+  );
+}
+
+function DevAccountPicker({
+  configured,
+  onSignInAs,
+  onCreateNew,
+}: {
+  configured: boolean;
+  onSignInAs: (id: string) => Promise<void>;
+  onCreateNew: () => Promise<void>;
+}) {
+  const [accounts, setAccounts] = useState<DevAccount[] | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!configured) return;
+    (async () => {
+      setAccounts(await listDevAccounts());
+    })();
+  }, [configured]);
+
+  const loading = configured && accounts === null;
+  const hasExisting = accounts && accounts.length > 0;
+
+  return (
+    <div className="mt-8 flex flex-col gap-4">
+      {hasExisting && (
+        <>
+          <p className="t-overline">Resume an account</p>
+          <div className="flex flex-col border border-hair rounded-card overflow-hidden bg-surface">
+            {accounts!.map((a, i) => (
+              <button
+                key={a.id}
+                type="button"
+                onClick={async () => {
+                  if (busyId) return;
+                  setBusyId(a.id);
+                  await onSignInAs(a.id);
+                  setBusyId(null);
+                }}
+                disabled={busyId !== null}
+                className={`flex items-center gap-3 text-left px-4 py-3 hover:bg-page transition disabled:opacity-60 ${
+                  i === 0 ? "" : "border-t border-hair"
+                }`}
+              >
+                <Avatar name={a.display_name} url={a.avatar_url} size={36} />
+                <div className="flex-1 min-w-0">
+                  <div className="t-label truncate">{a.display_name}</div>
+                  <div className="t-caption truncate">@{a.handle}</div>
+                </div>
+                <span className="t-caption">
+                  {busyId === a.id ? "Signing in…" : "Continue →"}
+                </span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {loading && <p className="t-small">Looking up existing accounts…</p>}
+
+      <Button
+        variant={hasExisting ? "ghost" : "primary"}
+        size="lg"
+        className="w-full"
+        onClick={() => void onCreateNew()}
+        disabled={!configured || busyId !== null}
+      >
+        {hasExisting ? "Create a new dev account" : "Sign in as dev"}
+      </Button>
+    </div>
   );
 }
 

@@ -15,6 +15,7 @@ import { exportRatings } from "./routes/export";
 import { listHistory, syncHistory } from "./routes/history";
 import { getRecommendations } from "./routes/recommendations";
 import { listNotifications, markRead } from "./routes/notifications";
+import { listDevUsers } from "./routes/dev";
 
 type Route = (
   event: APIGatewayProxyEventV2WithJWTAuthorizer,
@@ -53,6 +54,7 @@ const routes: RouteEntry[] = [
   { method: "GET",    path: "/recommendations", handler: getRecommendations },
   { method: "GET",    path: "/notifications",   handler: listNotifications },
   { method: "POST",   path: "/notifications/mark-read", handler: markRead },
+  { method: "GET",    path: "/dev/users",       handler: listDevUsers },
 ];
 
 /** Match `actual` (e.g. `/albums/abc-123`) against `pattern` (`/albums/:id`). */
