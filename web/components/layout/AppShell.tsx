@@ -8,7 +8,7 @@ import { useSession } from "@/lib/auth/session";
 import { NowPlayingProvider } from "@/lib/now-playing/context";
 import { RateProvider } from "@/components/rating/RateProvider";
 import { NowBar } from "@/components/layout/NowBar";
-import { Wordmark, MonogramE } from "@/components/design-system/Wordmark";
+import { GrooveWordmark } from "@/components/design-system/GrooveWordmark";
 import { DoubleRule } from "@/components/design-system/DoubleRule";
 import { Avatar } from "@/components/design-system/Avatar";
 import { Icon } from "@/components/design-system/Icon";
@@ -85,9 +85,8 @@ function Sidebar() {
   const pathname = usePathname();
   return (
     <aside className="w-[244px] flex-none bg-page border-r border-hair flex flex-col px-[18px] pt-[22px] pb-[18px] relative z-[5]">
-      <div className="flex items-center gap-2.5 px-1 pb-3.5">
-        <MonogramE size={28} />
-        <Wordmark size={22} />
+      <div className="flex items-center px-1 pb-3.5 overflow-hidden">
+        <GrooveWordmark fontSize={23} />
       </div>
       <DoubleRule width={44} className="ml-1 mb-[18px]" />
 
