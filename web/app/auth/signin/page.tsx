@@ -18,10 +18,25 @@ export default function SignInPage() {
   const errorMessage = status.kind === "signed_out" ? status.error : undefined;
 
   useEffect(() => {
-    if (status.kind === "ready" || status.kind === "onboarding") {
+    // Only bounce away if the user is fully ready. Onboarding states stay
+    // here so the dev account picker is reachable mid-flow (e.g. to switch
+    // accounts before finishing handle/lastfm).
+    if (status.kind === "ready") {
       router.replace("/");
     }
   }, [status.kind, router]);
+
+  // The picker handlers push to "/" after signing in so onboarding-state
+  // accounts land on the home page (where the right step renders) instead
+  // of getting stuck on /auth/signin.
+  async function handleSignInAs(id: string) {
+    await signInAs(id);
+    router.push("/");
+  }
+  async function handleCreateNew() {
+    await signIn();
+    router.push("/");
+  }
 
   return (
     <AuthFrame footer="By continuing you agree to Encore’s Terms and Privacy.">
@@ -34,8 +49,15 @@ export default function SignInPage() {
       {devMode ? (
         <DevAccountPicker
           configured={configured}
-          onSignInAs={signInAs}
-          onCreateNew={signIn}
+          currentUserId={
+            status.kind === "ready"
+              ? status.profile.id
+              : status.kind === "onboarding"
+                ? status.profile?.id
+                : null
+          }
+          onSignInAs={handleSignInAs}
+          onCreateNew={handleCreateNew}
         />
       ) : (
         <div className="mt-8 flex flex-col gap-3">
@@ -78,10 +100,12 @@ export default function SignInPage() {
 
 function DevAccountPicker({
   configured,
+  currentUserId,
   onSignInAs,
   onCreateNew,
 }: {
   configured: boolean;
+  currentUserId: string | null | undefined;
   onSignInAs: (id: string) => Promise<void>;
   onCreateNew: () => Promise<void>;
 }) {
@@ -104,31 +128,38 @@ function DevAccountPicker({
         <>
           <p className="t-overline">Resume an account</p>
           <div className="flex flex-col border border-hair rounded-card overflow-hidden bg-surface">
-            {accounts!.map((a, i) => (
-              <button
-                key={a.id}
-                type="button"
-                onClick={async () => {
-                  if (busyId) return;
-                  setBusyId(a.id);
-                  await onSignInAs(a.id);
-                  setBusyId(null);
-                }}
-                disabled={busyId !== null}
-                className={`flex items-center gap-3 text-left px-4 py-3 hover:bg-page transition disabled:opacity-60 ${
-                  i === 0 ? "" : "border-t border-hair"
-                }`}
-              >
-                <Avatar name={a.display_name} url={a.avatar_url} size={36} />
-                <div className="flex-1 min-w-0">
-                  <div className="t-label truncate">{a.display_name}</div>
-                  <div className="t-caption truncate">@{a.handle}</div>
-                </div>
-                <span className="t-caption">
-                  {busyId === a.id ? "Signing in…" : "Continue →"}
-                </span>
-              </button>
-            ))}
+            {accounts!.map((a, i) => {
+              const isCurrent = a.id === currentUserId;
+              return (
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={async () => {
+                    if (busyId) return;
+                    setBusyId(a.id);
+                    await onSignInAs(a.id);
+                    setBusyId(null);
+                  }}
+                  disabled={busyId !== null}
+                  className={`flex items-center gap-3 text-left px-4 py-3 hover:bg-page transition disabled:opacity-60 ${
+                    i === 0 ? "" : "border-t border-hair"
+                  }`}
+                >
+                  <Avatar name={a.display_name} url={a.avatar_url} size={36} />
+                  <div className="flex-1 min-w-0">
+                    <div className="t-label truncate">{a.display_name}</div>
+                    <div className="t-caption truncate">@{a.handle}</div>
+                  </div>
+                  <span className="t-caption">
+                    {busyId === a.id
+                      ? "Signing in…"
+                      : isCurrent
+                        ? "Current → Open"
+                        : "Continue →"}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </>
       )}
