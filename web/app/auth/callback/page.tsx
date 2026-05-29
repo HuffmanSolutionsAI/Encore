@@ -4,15 +4,13 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useSession } from "@/lib/auth/session";
-import { APP_NAME } from "@/lib/config";
-import { Card } from "@/components/design-system/Card";
-import { DoubleRule } from "@/components/design-system/DoubleRule";
-import { EncoreButton } from "@/components/design-system/EncoreButton";
+import { Button } from "@/components/design-system/Button";
+import { Overline } from "@/components/design-system/Overline";
+import { AuthFrame } from "@/components/layout/AuthFrame";
 
 /**
- * Cognito callback handler. Cognito redirects back here with `?code=…&state=…`.
- * We hand the code to the session provider, which exchanges it for tokens,
- * loads the profile, and tells us where to go next.
+ * Cognito callback. Hands the `?code=…&state=…` to the session provider,
+ * which exchanges it for tokens, loads the profile, and tells us where to go.
  */
 export default function CallbackPage() {
   const router = useRouter();
@@ -27,9 +25,7 @@ export default function CallbackPage() {
         if (!cancelled) router.replace(returnTo || "/");
       } catch (err) {
         if (!cancelled) {
-          setError(
-            err instanceof Error ? err.message : "Couldn't finish signing in.",
-          );
+          setError(err instanceof Error ? err.message : "Couldn't finish signing in.");
         }
       }
     })();
@@ -39,30 +35,29 @@ export default function CallbackPage() {
   }, [hydrateAfterCallback, router]);
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12">
-      <div className="w-full max-w-md flex flex-col items-center gap-8">
-        <header className="flex flex-col items-center gap-3">
-          <h1 className="font-display text-5xl text-brand">{APP_NAME}</h1>
-          <DoubleRule width={92} />
-        </header>
-
-        <Card padding={28} className="w-full text-center">
-          {error ? (
-            <div className="flex flex-col gap-4">
-              <p className="font-display text-xl">Couldn't finish signing in.</p>
-              <p className="text-muted">{error}</p>
-              <EncoreButton kind="secondary" onClick={() => router.replace("/auth/signin")}>
-                Try again
-              </EncoreButton>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-3">
-              <p className="font-display text-xl">Just a moment…</p>
-              <p className="text-muted">Finishing your sign-in.</p>
-            </div>
-          )}
-        </Card>
-      </div>
-    </main>
+    <AuthFrame>
+      {error ? (
+        <>
+          <Overline>Sign-in didn&rsquo;t finish</Overline>
+          <h1 className="t-h1 mt-3">Something interrupted us.</h1>
+          <p className="t-editorial mt-3" style={{ fontSize: 17 }}>
+            {error}
+          </p>
+          <div className="mt-8">
+            <Button variant="primary" size="lg" className="w-full" onClick={() => router.replace("/auth/signin")}>
+              Try again
+            </Button>
+          </div>
+        </>
+      ) : (
+        <>
+          <Overline>Just a moment</Overline>
+          <h1 className="t-h1 mt-3">Finishing your sign-in.</h1>
+          <p className="t-editorial mt-3" style={{ fontSize: 17 }}>
+            Pulling your library back from the shelf.
+          </p>
+        </>
+      )}
+    </AuthFrame>
   );
 }
