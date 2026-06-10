@@ -19,6 +19,7 @@ import { UsersAPI } from "@/lib/api/users";
 import { ExportAPI, FeedAPI, FollowsAPI, ProfilesAPI } from "@/lib/api/social";
 import { SearchAPI } from "@/lib/api/search";
 import { HistoryAPI, NotificationsAPI, RecommendationsAPI } from "@/lib/api/extras";
+import { ImportsAPI } from "@/lib/api/imports";
 import { remoteConfig } from "@/lib/config";
 import type { UserProfile } from "@/lib/types";
 import {
@@ -63,6 +64,7 @@ interface SessionContextValue {
   history: HistoryAPI;
   recommendations: RecommendationsAPI;
   notifications: NotificationsAPI;
+  imports: ImportsAPI;
   signIn: () => Promise<void>;
   /** Dev-mode only: sign in as an existing local user id (no new UUID). */
   signInAs: (userId: string) => Promise<void>;
@@ -143,6 +145,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const history = useMemo(() => new HistoryAPI(api), [api]);
   const recommendations = useMemo(() => new RecommendationsAPI(api), [api]);
   const notifications = useMemo(() => new NotificationsAPI(api), [api]);
+  const imports = useMemo(() => new ImportsAPI(api), [api]);
 
   const advanceWithProfile = useCallback((profile: UserProfile) => {
     const lastfmSkipped =
@@ -327,6 +330,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       history,
       recommendations,
       notifications,
+      imports,
       signIn,
       signInAs,
       signOut,
@@ -352,6 +356,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       history,
       recommendations,
       notifications,
+      imports,
       signIn,
       signInAs,
       signOut,

@@ -6,6 +6,7 @@ import { useSession } from "@/lib/auth/session";
 import { useTheme, type ThemePref } from "@/lib/theme";
 import { APIError } from "@/lib/api/client";
 import { AppShell } from "@/components/layout/AppShell";
+import { MusicboardImport } from "@/components/settings/MusicboardImport";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/design-system/Card";
 import { Button } from "@/components/design-system/Button";
@@ -290,6 +291,10 @@ function DataPane({ handle }: { handle: string }) {
 
   return (
     <>
+      <Section title="Import from Musicboard">
+        <MusicboardImport />
+      </Section>
+
       <Section title="Export your ratings">
         <p className="t-small mb-4">
           Your ratings are yours. Download your full history any time — a complete, well-formed file you can keep.
